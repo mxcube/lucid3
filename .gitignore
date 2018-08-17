@@ -1,0 +1,6 @@
+*.py[co]
+
+#Eclipse specific
+.settings
+.project
+.pydevproject
