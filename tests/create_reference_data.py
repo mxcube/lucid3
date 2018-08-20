@@ -28,7 +28,7 @@ Lucid 3 project - code for creating test data
 __author__ = "Olof Svensson"
 __contact__ = "svensson@esrf.eu"
 __copyright__ = "ESRF, 2017"
-__updated__ = "2018-08-17"
+__updated__ = "2018-08-20"
 
 import os
 import glob

@@ -1,4 +1,39 @@
 #! /usr/bin/env python
+# coding: utf-8
+# /*##########################################################################
+# Copyright (C) 2017 European Synchrotron Radiation Facility
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+#
+# ############################################################################*/
+"""
+Lucid 3 project - core 
+"""
+
+__author__ = "Olof Svensson"
+__contact__ = "svensson@esrf.eu"
+__copyright__ = "ESRF, 2017"
+__updated__ = "2018-08-20"
+
+# This code is a complete re-factoring of the "lucid2" code written by Sogeti,
+# see : https://github.com/mxcube/lucid2
+
 import os
 import cv2
 import shutil
@@ -7,46 +42,45 @@ import scipy.misc
 import numpy as np
 import matplotlib.pyplot as plt
 
-# import matplotlib
-# matplotlib.use('Qt4Agg')
-# import matplotlib.pyplot as plt
 
-# import sys
+# Minimum relative loop area
+MIN_REL_LOOP_AREA = 0.02
 
-# definition des variables Global :
+# Minimal lenght of detected contour (used when contour are still opened)
+MIN_CONTOUR_LENGTH = 125
 
-MICRON_PER_PIXEL = 2
-# Relative area criteria
-AIRE_MIN_REL = 0.02
-# Minimal lengh of detected contour (used when contour are still opened)
-LENGH_MIN = 125
-# global YSize # Size of white border
-(XSize, YSize) = (10, 10)  # White border applied to image in order to avoid border effect
-# (XSize, YSize) = (5, 5)  # White border applied to image in order to avoid border effect
-Offset = (4, 4)  # Offset applied to image in order to avoid border effect
-SeuilMode = False  # computing threshold mode
+# White border applied to image in order to avoid border effect
+(WHITE_BORDER_XSIZE, WHITE_BORDER_YSIZE) = (10, 10)
+
+# Offset applied to image in order to avoid border effect
+Offset = (4, 4)
+
 Area_Point_rel = 0.005
-# This parameter indicate the number of iteration on closing algorithme (upper value could lead to dust agglomeration with support)
-NiteClosing = 6
-# Possible Criteron mod
+
+# This parameter indicate the number of iteration on closing algorithm
+# (upper value could lead to dust agglomeration with support)
+CLOSING_ITERATIONS = 6
+
+# Possible Criteron modes
 CRIT_MOD_NOVALUE = 0
 CRIT_MOD_SUP = 1
 CRIT_MOD_LOOP = 2
 CRIT_MOD_NARROW = 3
-# Definition of value used for criterion depending on MICRON_PER_PIXEL value
-CRITERON_DY_LOOP_SUP = 280 / MICRON_PER_PIXEL
-CRITERON_DEFAULT3 = 110 / MICRON_PER_PIXEL
-CRITERON_DX_LINEARITY = 140 / MICRON_PER_PIXEL
-CRITERON_DY_LINEARITY = 90 / MICRON_PER_PIXEL
-CRITERON_DY_NARROW = 50 / MICRON_PER_PIXEL
-CRITERON_DX_NARROW = 50 / MICRON_PER_PIXEL
-CRITERON_DY_LOOP_SUP2 = 150 / MICRON_PER_PIXEL
-def find_loop(input_data, IterationClosing=1, rotation=None, debug=False):
+
+# Definition of value used for criterion
+CRITERON_DY_LOOP_SUP = 140
+CRITERON_DEFAULT3 = 55
+CRITERON_DX_LINEARITY = 70
+CRITERON_DY_LINEARITY = 45
+CRITERON_DY_NARROW = 25
+CRITERON_DX_NARROW = 25
+CRITERON_DY_LOOP_SUP2 = 75
+
+def find_loop(input_data, rotation=None, debug=False):
     """
       This function detect support (or loop) and return the coordinates if there is a detection,
       and -1 if not.
       in : filename : string image Filename / Format accepted :
-      in : IterationClosing : int : Number of iteration for closing contour procedure
       Out : tupple of coordiante : (string, coordinate X, coordinate Y) where string take value
           'Coord' or 'No loop detected depending if loop was detected or not. If no loop was
            detected coordinate X and coordinate y take the value -1.
@@ -60,10 +94,10 @@ def find_loop(input_data, IterationClosing=1, rotation=None, debug=False):
         shutil.copy(input_data, fileBase + suffix)
         os.remove(os.path.join(archiveDir, fileBase))
 # Definition variable Global
-    global AIRE_MIN_REL
+    global MIN_REL_LOOP_AREA
     global AIRE_MIN
     global NORM_IMG
-    global NiteClosing
+    global CLOSING_ITERATIONS
     global pointRef
 # Chargement image
     try :
@@ -101,7 +135,7 @@ def find_loop(input_data, IterationClosing=1, rotation=None, debug=False):
         return ("ERROR : Input image could not be opened, check format or path", -10, -10)
     rows, cols = img_ipl.shape
     NORM_IMG = rows * cols
-    AIRE_MIN = NORM_IMG * AIRE_MIN_REL
+    AIRE_MIN = NORM_IMG * MIN_REL_LOOP_AREA
     print("AIRE_MIN: {0}".format(AIRE_MIN))
 # traitement
 
@@ -154,7 +188,7 @@ def find_loop(input_data, IterationClosing=1, rotation=None, debug=False):
     # Define the Kernel for closing algorythme
     MKernel = cv2.getStructuringElement(shape=cv2.MORPH_RECT, ksize=(5, 3), anchor=(3, 1))
     # MKernel = cv2.getStructuringElement(shape=cv2.MORPH_RECT, ksize=(7, 3), anchor=(3, 1))
-    img_lap = cv2.morphologyEx(img_lap, cv2.MORPH_CLOSE, MKernel, iterations=NiteClosing)
+    img_lap = cv2.morphologyEx(img_lap, cv2.MORPH_CLOSE, MKernel, iterations=CLOSING_ITERATIONS)
     if debug:
         plt.imshow(img_lap)
         plt.title("Morphology")
@@ -171,7 +205,7 @@ def find_loop(input_data, IterationClosing=1, rotation=None, debug=False):
         plt.show()
 
     # Add white border to image
-    img_lap8 = WhiteBorder(img_lap8_ini[:], XSize, YSize)
+    img_lap8 = WhiteBorder(img_lap8_ini[:], WHITE_BORDER_XSIZE, WHITE_BORDER_YSIZE)
 
     # Compute threshold
     seuil_tmp = Seuil_var(img_lap8)
@@ -229,7 +263,7 @@ def find_loop(input_data, IterationClosing=1, rotation=None, debug=False):
         #     The coordinate of target is computed in the traited image
         point_shift = integreCont(indice, contour_list[0])
         #     The coordinate in original image are computed taken into account Offset and white bordure
-        point = (point_shift[0], point_shift[1] + 2 * Offset[0] - XSize, point_shift[2] + 2 * Offset[1] - YSize)
+        point = (point_shift[0], point_shift[1] + 2 * Offset[0] - WHITE_BORDER_XSIZE, point_shift[2] + 2 * Offset[1] - WHITE_BORDER_YSIZE)
         # Mask the lower and upper right corners
         if point_shift[1] < cols * 0.2:
             if point_shift[2] < rows * 0.2 or \
@@ -275,10 +309,10 @@ def parcourt_contour(_contours, img):
     Out : list of contour
     """
     # Global Variable Definition
-    global AIRE_MIN_REL
+    global MIN_REL_LOOP_AREA
     global AIRE_MIN
     global NORM_IMG
-    global LENGH_MIN
+    global MIN_CONTOUR_LENGTH
     contours = list(_contours)
     # Local Variable definition
     Still_Contour = True  # Booleen Used for check if all contour seq is checked
@@ -304,7 +338,7 @@ def parcourt_contour(_contours, img):
     print(lengh)
 
     # if Current contour lengh or Aire is upper than reference
-    if(lengh > LENGH_MIN or Area > AIRE_MIN):
+    if(lengh > MIN_CONTOUR_LENGTH or Area > AIRE_MIN):
         # increament contour kept counter
         count = count + 1
         # Seq is put in buffer
@@ -335,7 +369,7 @@ def parcourt_contour(_contours, img):
         # Compute lengh of contour
         lengh = len(seq)
         # If lengh or Area is upper limit value contour is kept
-        if(lengh > LENGH_MIN or Area > AIRE_MIN):
+        if(lengh > MIN_CONTOUR_LENGTH or Area > AIRE_MIN):
             count = count + 1
             Seq_triee = seq
             # If contour have the maximal area

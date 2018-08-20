@@ -1,8 +1,34 @@
-'''
-Created on Jul 19, 2016
+# coding: utf-8
+# /*##########################################################################
+# Copyright (C) 2017 European Synchrotron Radiation Facility
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+#
+# ############################################################################*/
+"""
+Lucid 3 project - test code
+"""
 
-@author: svensson
-'''
+__author__ = "Olof Svensson"
+__contact__ = "svensson@esrf.eu"
+__copyright__ = "ESRF, 2017"
+__updated__ = "2018-08-20"
 
 import matplotlib
 # matplotlib.use('Qt4Agg')
@@ -36,10 +62,10 @@ class Test(unittest.TestCase):
         print("OpenCV Version : %s " % cv2.__version__)
 #        directory = "/scisoft/pxsoft/data/WORKFLOW_TEST_DATA/id30a1/snapshots/snapshots_20160718-152813_Gow8z5"
 #        path = "/scisoft/pxsoft/data/WORKFLOW_TEST_DATA/id30a1/snapshots/*/*_???.png"
-        # path = "/scisoft/pxsoft/data/lucid/reference/id30a1/*.png"
+        path = "/scisoft/pxsoft/data/lucid/reference/id30a1/*.png"
         # path = "/scisoft/pxsoft/data/lucid/reference/id23eh2/*.png"
         # path = "/scisoft/pxsoft/data/lucid/reference/id30b/*.png"
-        path = "/scisoft/pxsoft/data/lucid/reference/*/*.png"
+        # path = "/scisoft/pxsoft/data/lucid/reference/*/*.png"
 #        directory = "/scisoft/pxsoft/data/WORKFLOW_TEST_DATA/id29/snapshots/20170823"
 #        directory = "/scisoft/pxsoft/data/WORKFLOW_TEST_DATA/id23eh2/snapshots/2070704"
 #        directory = "/scisoft/pxsoft/data/WORKFLOW_TEST_DATA/id23eh2/snapshots/20170822"
