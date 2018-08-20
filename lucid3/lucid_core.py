@@ -42,6 +42,11 @@ import scipy.misc
 import numpy as np
 import matplotlib.pyplot as plt
 
+# Offset applied to shrink initial image in order to avoid border effect
+SHRINK_OFFSET = (4, 4)
+
+# White border applied to extend image in order to avoid border effect
+WHITE_BORDER = (10, 10)
 
 # Minimum relative loop area
 MIN_REL_LOOP_AREA = 0.02
@@ -49,13 +54,9 @@ MIN_REL_LOOP_AREA = 0.02
 # Minimal lenght of detected contour (used when contour are still opened)
 MIN_CONTOUR_LENGTH = 125
 
-# White border applied to image in order to avoid border effect
-(WHITE_BORDER_XSIZE, WHITE_BORDER_YSIZE) = (10, 10)
 
-# Offset applied to image in order to avoid border effect
-Offset = (4, 4)
 
-Area_Point_rel = 0.005
+AREA_POINT_REL = 0.005
 
 # This parameter indicate the number of iteration on closing algorithm
 # (upper value could lead to dust agglomeration with support)
@@ -66,15 +67,6 @@ CRIT_MOD_NOVALUE = 0
 CRIT_MOD_SUP = 1
 CRIT_MOD_LOOP = 2
 CRIT_MOD_NARROW = 3
-
-# Definition of value used for criterion
-CRITERON_DY_LOOP_SUP = 140
-CRITERON_DEFAULT3 = 55
-CRITERON_DX_LINEARITY = 70
-CRITERON_DY_LINEARITY = 45
-CRITERON_DY_NARROW = 25
-CRITERON_DX_NARROW = 25
-CRITERON_DY_LOOP_SUP2 = 75
 
 def find_loop(input_data, rotation=None, debug=False):
     """
@@ -93,12 +85,6 @@ def find_loop(input_data, rotation=None, debug=False):
         suffix = os.path.splitext(input_data)[1]
         shutil.copy(input_data, fileBase + suffix)
         os.remove(os.path.join(archiveDir, fileBase))
-# Definition variable Global
-    global MIN_REL_LOOP_AREA
-    global AIRE_MIN
-    global NORM_IMG
-    global CLOSING_ITERATIONS
-    global pointRef
 # Chargement image
     try :
         if type(input_data) == str:
@@ -134,16 +120,16 @@ def find_loop(input_data, rotation=None, debug=False):
         print("ERROR : Input image could not be opened, check format or path")
         return ("ERROR : Input image could not be opened, check format or path", -10, -10)
     rows, cols = img_ipl.shape
-    NORM_IMG = rows * cols
-    AIRE_MIN = NORM_IMG * MIN_REL_LOOP_AREA
-    print("AIRE_MIN: {0}".format(AIRE_MIN))
+    image_area = rows * cols
+    min_loop_area = image_area * MIN_REL_LOOP_AREA
+    print("min_loop_area: {0}".format(min_loop_area))
 # traitement
 
     # Converting input image in Grey scale image
     # img_gray_ini = cv2.cvtColor(img_ipl, cv2.COLOR_RGB2GRAY);
     img_gray_ini = img_ipl
-    # Removing Offset from image
-    img_gray_resize = img_gray_ini[Offset[0]:rows - 2 * Offset[0], Offset[1]:cols - 2 * Offset[1]]
+    # Removing SHRINK_OFFSET from image
+    img_gray_resize = img_gray_ini[SHRINK_OFFSET[0]:rows - 2 * SHRINK_OFFSET[0], SHRINK_OFFSET[1]:cols - 2 * SHRINK_OFFSET[1]]
     if debug:
         plt.imshow(img_gray_resize)
         plt.title("Original")
@@ -180,8 +166,8 @@ def find_loop(input_data, rotation=None, debug=False):
         plt.imshow(img_lap_ini)
         plt.title("Laplacian")
         plt.show()
-    # Applying Offset to avoid border effect
-    img_lap = img_lap_ini[Offset[0]:rows - 2 * Offset[0], Offset[1]:cols - 2 * Offset[1]]
+    # Applying SHRINK_OFFSET to avoid border effect
+    img_lap = img_lap_ini[SHRINK_OFFSET[0]:rows - 2 * SHRINK_OFFSET[0], SHRINK_OFFSET[1]:cols - 2 * SHRINK_OFFSET[1]]
     # Apply an asymetrique  smoothing
     img_lap = cv2.GaussianBlur(img_lap, ksize=(21, 11), sigmaX=0)
     # img_lap = cv2.GaussianBlur(img_lap, ksize=(17, 9), sigmaX=0)
@@ -205,7 +191,7 @@ def find_loop(input_data, rotation=None, debug=False):
         plt.show()
 
     # Add white border to image
-    img_lap8 = WhiteBorder(img_lap8_ini[:], WHITE_BORDER_XSIZE, WHITE_BORDER_YSIZE)
+    img_lap8 = WhiteBorder(img_lap8_ini[:], WHITE_BORDER[0], WHITE_BORDER[1])
 
     # Compute threshold
     seuil_tmp = Seuil_var(img_lap8)
@@ -248,7 +234,7 @@ def find_loop(input_data, rotation=None, debug=False):
     contours, hierarchy = cv2.findContours(img_trait_lap, mode=cv2.RETR_TREE, method=cv2.CHAIN_APPROX_SIMPLE)
     # contour is filtered
     try :
-        contour_list = parcourt_contour(contours, img_lap_color)
+        contour_list = parcourt_contour(contours, img_lap_color, min_loop_area)
     except :
         raise
 #     If error is traped then there is no loop detected
@@ -262,8 +248,8 @@ def find_loop(input_data, rotation=None, debug=False):
         indice = MapCont(contour_list[0], cols, rows)
         #     The coordinate of target is computed in the traited image
         point_shift = integreCont(indice, contour_list[0])
-        #     The coordinate in original image are computed taken into account Offset and white bordure
-        point = (point_shift[0], point_shift[1] + 2 * Offset[0] - WHITE_BORDER_XSIZE, point_shift[2] + 2 * Offset[1] - WHITE_BORDER_YSIZE)
+        #     The coordinate in original image are computed taken into account SHRINK_OFFSET and white bordure
+        point = (point_shift[0], point_shift[1] + 2 * SHRINK_OFFSET[0] - WHITE_BORDER[0], point_shift[2] + 2 * SHRINK_OFFSET[1] - WHITE_BORDER[1])
         # Mask the lower and upper right corners
         if point_shift[1] < cols * 0.2:
             if point_shift[2] < rows * 0.2 or \
@@ -300,7 +286,7 @@ def find_loop(input_data, rotation=None, debug=False):
 
     return point
 
-def parcourt_contour(_contours, img):
+def parcourt_contour(_contours, img, min_loop_area):
     """
     This fonction is a seq contours filter. Contours are selectionned by applying AIRE and lengh critera.
        
@@ -309,9 +295,6 @@ def parcourt_contour(_contours, img):
     Out : list of contour
     """
     # Global Variable Definition
-    global MIN_REL_LOOP_AREA
-    global AIRE_MIN
-    global NORM_IMG
     global MIN_CONTOUR_LENGTH
     contours = list(_contours)
     # Local Variable definition
@@ -338,7 +321,7 @@ def parcourt_contour(_contours, img):
     print(lengh)
 
     # if Current contour lengh or Aire is upper than reference
-    if(lengh > MIN_CONTOUR_LENGTH or Area > AIRE_MIN):
+    if(lengh > MIN_CONTOUR_LENGTH or Area > min_loop_area):
         # increament contour kept counter
         count = count + 1
         # Seq is put in buffer
@@ -369,7 +352,7 @@ def parcourt_contour(_contours, img):
         # Compute lengh of contour
         lengh = len(seq)
         # If lengh or Area is upper limit value contour is kept
-        if(lengh > MIN_CONTOUR_LENGTH or Area > AIRE_MIN):
+        if(lengh > MIN_CONTOUR_LENGTH or Area > min_loop_area):
             count = count + 1
             Seq_triee = seq
             # If contour have the maximal area
@@ -487,7 +470,7 @@ def integreCont(listInd, seq):
     global CRIT_MOD_LOOP
     global CRIT_MOD_NARROW
     global CRIT_MOD_NOVALUE
-    global Area_Point_rel
+    global AREA_POINT_REL
     # Initialize both cover indexe to the one of the maximal abscissa point of contour
     indMax = FindPointMax(listInd)
     indMin = FindPointMax(listInd)
@@ -515,7 +498,7 @@ def integreCont(listInd, seq):
         Xtot = seq[indMax][0][0]
         # Get the criter for extract coordinate point
         Area = GetCriter(listInd, seq, indMax)
-        Area10 = Area * Area_Point_rel
+        Area10 = Area * AREA_POINT_REL
         Nmax = s0 / 2.
         # While coordinates point are not found and iteration max is not reached
         while(search and Nite < Nmax):
@@ -572,6 +555,15 @@ def GetCriter(listInd, seq, indMax):
     Area critere and Detected Type are global variable
     """
 
+
+    # Definition of value used for criterion
+    CRITERON_DY_LOOP_SUP = 140
+    CRITERON_DEFAULT3 = 55
+    CRITERON_DX_LINEARITY = 70
+    CRITERON_DY_LINEARITY = 45
+    CRITERON_DY_NARROW = 25
+    CRITERON_DX_NARROW = 25
+    CRITERON_DY_LOOP_SUP2 = 75
     #  Global variable declaration
     global Crit_Mod
     global CRIT_MOD_SUP
@@ -579,8 +571,8 @@ def GetCriter(listInd, seq, indMax):
     global CRIT_MOD_NARROW
     global CRIT_MOD_NOVALUE
     Crit_Mod = CRIT_MOD_NOVALUE
-    global Area_Point_rel
-    Area_Point_rel = 0.008
+    global AREA_POINT_REL
+    AREA_POINT_REL = 0.008
     #  Local variable declaration
     Crit_Mod_opt = CRIT_MOD_NOVALUE  # Used when a possible support is detected, but loop could still be detected also.
     # If there is a Maximum in X
@@ -620,20 +612,20 @@ def GetCriter(listInd, seq, indMax):
                 # If the step in Y corresponding is upper than 90 Micron
                 if((Ymax - Yd) > CRITERON_DY_LINEARITY) :
                     Crit_Mod = CRIT_MOD_LOOP
-                    Area_Point_rel = 0.4
+                    AREA_POINT_REL = 0.4
                 else :
                     # An option is took to Support type, but not definitly cause some loop can present this kind of shape too
                     Crit_Mod_opt = CRIT_MOD_SUP
             # If Yd is upside the narrow limit and dx is downside the x narrow limit then it s not a narrow type
             if(Yd > CRITERON_DY_NARROW and (Xtot - XM) < CRITERON_DX_NARROW):
-                Area_Point_rel = 0.05
+                AREA_POINT_REL = 0.05
             # If the CRITERON_DX_NARROW has been cover and area_point_rel is still to the default value and no support option has been detected
-            if((Xtot - XM) > CRITERON_DX_NARROW and Area_Point_rel < 0.04 and Crit_Mod_opt != CRIT_MOD_SUP) :
+            if((Xtot - XM) > CRITERON_DX_NARROW and AREA_POINT_REL < 0.04 and Crit_Mod_opt != CRIT_MOD_SUP) :
                 # Then criteron is set to narrow mod
                 Crit_Mod = CRIT_MOD_NARROW
             # If a step in Dy superior to 140 micron is detected then default value for relative area is set to 0.15
-            if(Yd > CRITERON_DEFAULT3 and Area_Point_rel < 0.1 and Crit_Mod_opt != CRIT_MOD_SUP):
-                 Area_Point_rel = 0.15
+            if(Yd > CRITERON_DEFAULT3 and AREA_POINT_REL < 0.1 and Crit_Mod_opt != CRIT_MOD_SUP):
+                 AREA_POINT_REL = 0.15
             # If a loop support is detected for the fist time
             if(Yd > CRITERON_DY_LOOP_SUP and Crit_Mod != CRIT_MOD_LOOP):
                 Xint = 0
@@ -647,7 +639,7 @@ def GetCriter(listInd, seq, indMax):
                 # if the step is taller than 140 micron then mod is loop and relative area is set to 0.2
                 if(DY25 > CRITERON_DY_LOOP_SUP2) :
                     Crit_Mod = CRIT_MOD_LOOP
-                    Area_Point_rel = 0.2
+                    AREA_POINT_REL = 0.2
                     indBord1 = indm
                     indBord2 = indp
                 # Else criteron mode is set to support
