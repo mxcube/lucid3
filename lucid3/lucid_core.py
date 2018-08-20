@@ -17,11 +17,12 @@ import matplotlib.pyplot as plt
 
 MICRON_PER_PIXEL = 2
 # Relative area criteria
-AIRE_MIN_REL = 0.015
+AIRE_MIN_REL = 0.02
 # Minimal lengh of detected contour (used when contour are still opened)
 LENGH_MIN = 125
 # global YSize # Size of white border
 (XSize, YSize) = (10, 10)  # White border applied to image in order to avoid border effect
+# (XSize, YSize) = (5, 5)  # White border applied to image in order to avoid border effect
 Offset = (4, 4)  # Offset applied to image in order to avoid border effect
 SeuilMode = False  # computing threshold mode
 Area_Point_rel = 0.005
@@ -68,13 +69,23 @@ def find_loop(input_data, IterationClosing=1, rotation=None, debug=False):
     try :
         if type(input_data) == str:
             # Image filename is passed
-            if rotation is None:
-                img_ipl = cv2.imread(input_data)
-            else:
-                img0 = cv2.imread(input_data)
-                rows, cols, layers = img0.shape
-                M = cv2.getRotationMatrix2D((cols / 2, rows / 2), rotation, 1)
-                imgRotated = cv2.warpAffine(img0, M, (cols, rows))
+            img_ipl = cv2.imread(input_data)
+            img_ipl = cv2.cvtColor(img_ipl, cv2.COLOR_RGB2GRAY);
+            if rotation is not None:
+                if debug:
+                    plt.imshow(img_ipl)
+                    plt.title("Not rotated")
+                    plt.show()
+                # rows, cols, layers = img0.shape
+                print(img_ipl.shape)
+                # M = cv2.getRotationMatrix2D((cols / 2, rows / 2), rotation, 1)
+                # imgRotated = cv2.warpAffine(img0, M, (cols, rows))
+                imgRotated = np.rot90(img_ipl, k=3)
+                print(imgRotated.shape)
+                if debug:
+                    plt.imshow(imgRotated)
+                    plt.title("Rotated")
+                    plt.show()
                 # cv2.imshow("Test", dst)
                 # cv2.waitKey(0)
                 img_ipl = imgRotated
@@ -88,24 +99,52 @@ def find_loop(input_data, IterationClosing=1, rotation=None, debug=False):
         raise
         print("ERROR : Input image could not be opened, check format or path")
         return ("ERROR : Input image could not be opened, check format or path", -10, -10)
-    rows, cols, layers = img_ipl.shape
+    rows, cols = img_ipl.shape
     NORM_IMG = rows * cols
     AIRE_MIN = NORM_IMG * AIRE_MIN_REL
     print("AIRE_MIN: {0}".format(AIRE_MIN))
 # traitement
 
     # Converting input image in Grey scale image
-    img_gray_ini = cv2.cvtColor(img_ipl, cv2.COLOR_RGB2GRAY);
+    # img_gray_ini = cv2.cvtColor(img_ipl, cv2.COLOR_RGB2GRAY);
+    img_gray_ini = img_ipl
     # Removing Offset from image
     img_gray_resize = img_gray_ini[Offset[0]:rows - 2 * Offset[0], Offset[1]:cols - 2 * Offset[1]]
+    if debug:
+        plt.imshow(img_gray_resize)
+        plt.title("Original")
+        plt.show()
 #    #creat image used for treatment
     img_gray = cv2.GaussianBlur(img_gray_resize, ksize=(11, 9), sigmaX=0)
-    # img_trait = cv2.Canny(img_gray, 40, 60)
+    if debug:
+        plt.imshow(img_gray)
+        plt.title("Gaussian Blur")
+        plt.show()
+#   Cutoff for very smooth images
+    rows, cols = img_gray.shape
+    center = [int(cols / 2), int(rows / 2)]
+    radius = min(center[0], center[1])
+    Y, X = np.ogrid[:rows, :cols]
+    dist_from_center = np.sqrt((X - center[0]) ** 2 + (Y - center[1]) ** 2)
+    if debug:
+        plt.imshow(dist_from_center)
+        plt.title("Mask")
+        plt.show()
+
+    mask1 = dist_from_center <= radius
+    mask2 = np.ones((rows, cols), dtype=img_gray.dtype) - mask1
+    img_gray_masked = img_gray * mask1 + mask2 * 100
+    img_gray[ np.where(img_gray_masked < 20) ] = 0
+    if debug:
+        plt.imshow(img_gray)
+        plt.title("Cutoff")
+        plt.show()
+    img_trait = cv2.Canny(img_gray, 40, 60)
     # Computing laplacian
     img_lap_ini = cv2.Laplacian(img_gray, cv2.CV_64F, ksize=5)
     if debug:
-        plt.figure(figsize=(11.8, 11.8))
         plt.imshow(img_lap_ini)
+        plt.title("Laplacian")
         plt.show()
     # Applying Offset to avoid border effect
     img_lap = img_lap_ini[Offset[0]:rows - 2 * Offset[0], Offset[1]:cols - 2 * Offset[1]]
@@ -113,17 +152,23 @@ def find_loop(input_data, IterationClosing=1, rotation=None, debug=False):
     img_lap = cv2.GaussianBlur(img_lap, ksize=(21, 11), sigmaX=0)
     # img_lap = cv2.GaussianBlur(img_lap, ksize=(17, 9), sigmaX=0)
     # Define the Kernel for closing algorythme
-    MKernel = cv2.getStructuringElement(shape=cv2.MORPH_RECT, ksize=(7, 3), anchor=(3, 1))
+    MKernel = cv2.getStructuringElement(shape=cv2.MORPH_RECT, ksize=(5, 3), anchor=(3, 1))
+    # MKernel = cv2.getStructuringElement(shape=cv2.MORPH_RECT, ksize=(7, 3), anchor=(3, 1))
     img_lap = cv2.morphologyEx(img_lap, cv2.MORPH_CLOSE, MKernel, iterations=NiteClosing)
     if debug:
-        plt.figure(figsize=(11.8, 11.8))
         plt.imshow(img_lap)
+        plt.title("Morphology")
         plt.show()
 
     img_lap[ np.where(img_lap < 0) ] = 0
     img_lap[ np.where(img_lap >= 255) ] = 0
 
     img_lap8_ini = np.uint8(img_lap)
+
+    if debug:
+        plt.imshow(img_lap8_ini)
+        plt.title("Cutoff")
+        plt.show()
 
     # Add white border to image
     img_lap8 = WhiteBorder(img_lap8_ini[:], XSize, YSize)
@@ -141,8 +186,8 @@ def find_loop(input_data, IterationClosing=1, rotation=None, debug=False):
     # Compute thresholded image
     ret, img_lap_bi = cv2.threshold(img_lap8, seuil, 255, 0)
     if debug:
-        plt.figure(figsize=(11.8, 11.8))
         plt.imshow(img_lap_bi)
+        plt.title("Threshold")
         plt.show()
     # Gaussian smoothing on laplacian
     img_lap_bi = cv2.GaussianBlur(img_lap_bi, ksize=(11, 11), sigmaX=0)
@@ -150,16 +195,16 @@ def find_loop(input_data, IterationClosing=1, rotation=None, debug=False):
     # Convert grayscale laplacian image to binarie image using "seuil" as threshold value
     ret, img_lap_bi = cv2.threshold(img_lap_bi, seuil, 255, cv2.THRESH_BINARY_INV)
     if debug:
-        plt.figure(figsize=(11.8, 11.8))
         plt.imshow(img_lap_bi)
+        plt.title("Gaussian blur")
         plt.show()
     img_lap_color = img_lap_bi
     img_trait_lap = cv2.Canny(img_lap_bi, 0, 2)
     kernel = np.ones((3, 3), np.uint8)
     img_trait_lap = cv2.dilate(img_trait_lap, kernel, iterations=1)
     if debug:
-        plt.figure(figsize=(11.8, 11.8))
         plt.imshow(img_trait_lap)
+        plt.title("Contours")
         plt.show()
 # img_lap[ np.where(img_lap < 0) ] = 0
 #         cv2.imshow("Canny", img_trait_lap)
@@ -193,11 +238,12 @@ def find_loop(input_data, IterationClosing=1, rotation=None, debug=False):
                 point = ("No loop detected", -1, -1)
         else:
             if rotation is not None:
-                centX = cols / 2
-                centY = rows
-                distX = centX - point[1]
-                distY = centY - point[2]
-                point = (point[0], centX - distY, centY + distX)
+                # centX = cols / 2
+                # centY = rows
+                # distX = centX - point[1]
+                # distY = centY - point[2]
+                # point = (point[0], centX - distY, centY + distX)
+                point = (point[0], point[2], cols - point[1])
             if debug:
                 image = scipy.misc.imread(input_data, flatten=True)
                 imgshape = image.shape
@@ -313,8 +359,12 @@ def WhiteBorder(img, XSize, YSize):
     """
     s0, s1 = img.shape
     dtypeI = img.dtype
-    output_mat = np.zeros((s0 + 2 * XSize, s1 + YSize), dtype=dtypeI)
-    output_mat[XSize:s0 + XSize, YSize:s1 + YSize] = img[:, :]
+    output_mat = np.zeros((s0, s1), dtype=dtypeI)
+    output_mat[XSize:s0 - XSize, YSize:s1] = img[XSize:s0 - XSize, 0:s1 - YSize]
+    # Clear corners
+    cutoff_size = 50
+    output_mat[0:cutoff_size, 0:cutoff_size] = 0
+    output_mat[s0 - cutoff_size:s0, 0:cutoff_size] = 0
     return output_mat
 def Seuil_var(img):
     """

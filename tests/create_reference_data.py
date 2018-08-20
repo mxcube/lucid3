@@ -55,8 +55,8 @@ def md5(fname):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
 
-snapshotDir = "/scisoft/pxsoft/data/WORKFLOW_TEST_DATA/id30a1/snapshots/*"
-savePath = "/scisoft/pxsoft/data/lucid/reference/id30a1"
+snapshotDir = "/data/id30a3/inhouse/opid30a3/snapshots/"
+savePath = "/scisoft/pxsoft/data/lucid/reference/id30a3"
 if not os.path.exists(savePath):
     os.makedirs(savePath, 0755)
 
