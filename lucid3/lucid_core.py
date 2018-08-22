@@ -68,130 +68,64 @@ CRIT_MOD_SUP = 1
 CRIT_MOD_LOOP = 2
 CRIT_MOD_NARROW = 3
 
-def find_loop(input_data, rotation=None, debug=False):
+def find_loop(filename, rotation=None, debug=False, archiveDir=None):
     """
-      This function detect support (or loop) and return the coordinates if there is a detection,
-      and -1 if not.
+      This function detect support (or loop).
       in : filename : string image Filename / Format accepted :
-      Out : tupple of coordiante : (string, coordinate X, coordinate Y) where string take value
-          'Coord' or 'No loop detected depending if loop was detected or not. If no loop was
-           detected coordinate X and coordinate y take the value -1.
+      Out : tuple of coordinates : (string status, float x, float y) where string 'status' take value 'Coord'
+                                   or 'No loop detected' depending if loop was detected or not. 
+                                   If no loop was detected X and y take the value -1.
     """
-# Archive the image
-    if debug:
-        archiveDir = "/scisoft/users/svensson/tmp"
-        (file_descriptor, fileBase) = tempfile.mkstemp(prefix="lucid_id29_", dir=archiveDir)
-        os.close(file_descriptor)
-        suffix = os.path.splitext(input_data)[1]
-        shutil.copy(input_data, fileBase + suffix)
-        os.remove(os.path.join(archiveDir, fileBase))
-# Chargement image
-    try :
-        if type(input_data) == str:
-            # Image filename is passed
-            img_ipl = cv2.imread(input_data)
-            img_ipl = cv2.cvtColor(img_ipl, cv2.COLOR_RGB2GRAY);
-            if rotation is not None:
-                if debug:
-                    plt.imshow(img_ipl)
-                    plt.title("Not rotated")
-                    plt.show()
-                # rows, cols, layers = img0.shape
-                print(img_ipl.shape)
-                # M = cv2.getRotationMatrix2D((cols / 2, rows / 2), rotation, 1)
-                # imgRotated = cv2.warpAffine(img0, M, (cols, rows))
-                imgRotated = np.rot90(img_ipl, k=3)
-                print(imgRotated.shape)
-                if debug:
-                    plt.imshow(imgRotated)
-                    plt.title("Rotated")
-                    plt.show()
-                # cv2.imshow("Test", dst)
-                # cv2.waitKey(0)
-                img_ipl = imgRotated
-        elif type(input_data) == np.ndarray:
-            # img_ipl = cv2.cv.fromarray(input_data)
-            img_ipl = input_data
-        else:
-            print("ERROR : Input image could not be opened, check format or path")
-            return ("ERROR : Input image could not be opened, check format or path", -10, -10)
-    except:
-        raise
-        print("ERROR : Input image could not be opened, check format or path")
-        return ("ERROR : Input image could not be opened, check format or path", -10, -10)
-    rows, cols = img_ipl.shape
-    image_area = rows * cols
-    min_loop_area = image_area * MIN_REL_LOOP_AREA
-    print("min_loop_area: {0}".format(min_loop_area))
-# traitement
+    # Archive the image if archiveDir is not None
+    if archiveDir is not None:
+        archiveImage(filename, archiveDir)
 
-    # Converting input image in Grey scale image
-    # img_gray_ini = cv2.cvtColor(img_ipl, cv2.COLOR_RGB2GRAY);
-    img_gray_ini = img_ipl
-    # Removing SHRINK_OFFSET from image
-    img_gray_resize = img_gray_ini[SHRINK_OFFSET[0]:rows - 2 * SHRINK_OFFSET[0], SHRINK_OFFSET[1]:cols - 2 * SHRINK_OFFSET[1]]
-    if debug:
-        plt.imshow(img_gray_resize)
-        plt.title("Original")
-        plt.show()
-#    #creat image used for treatment
-    img_gray = cv2.GaussianBlur(img_gray_resize, ksize=(11, 9), sigmaX=0)
-    if debug:
-        plt.imshow(img_gray)
-        plt.title("Gaussian Blur")
-        plt.show()
-#   Cutoff for very smooth images
-    rows, cols = img_gray.shape
-    center = [int(cols / 2), int(rows / 2)]
-    radius = min(center[0], center[1])
-    Y, X = np.ogrid[:rows, :cols]
-    dist_from_center = np.sqrt((X - center[0]) ** 2 + (Y - center[1]) ** 2)
-    if debug:
-        plt.imshow(dist_from_center)
-        plt.title("Mask")
-        plt.show()
+    # Load the image as a numpy array, taking into account rotation
+    grayImage = loadGrayImage(filename, rotation)
 
-    mask1 = dist_from_center <= radius
-    mask2 = np.ones((rows, cols), dtype=img_gray.dtype) - mask1
-    img_gray_masked = img_gray * mask1 + mask2 * 100
-    img_gray[ np.where(img_gray_masked < 20) ] = 0
-    if debug:
-        plt.imshow(img_gray)
-        plt.title("Cutoff")
-        plt.show()
-    img_trait = cv2.Canny(img_gray, 40, 60)
-    # Computing laplacian
-    img_lap_ini = cv2.Laplacian(img_gray, cv2.CV_64F, ksize=5)
-    if debug:
-        plt.imshow(img_lap_ini)
-        plt.title("Laplacian")
-        plt.show()
-    # Applying SHRINK_OFFSET to avoid border effect
-    img_lap = img_lap_ini[SHRINK_OFFSET[0]:rows - 2 * SHRINK_OFFSET[0], SHRINK_OFFSET[1]:cols - 2 * SHRINK_OFFSET[1]]
+    # Calculate min loop area
+    rows, cols = grayImage.shape
+    imageArea = rows * cols
+    minLoopArea = imageArea * MIN_REL_LOOP_AREA
+
+    # Image analysis step 1 :
+    # Removing borders of size SHRINK_OFFSET from image
+    grayImageTruncated = grayImage[SHRINK_OFFSET[0]:rows - 2 * SHRINK_OFFSET[0],
+                                   SHRINK_OFFSET[1]:cols - 2 * SHRINK_OFFSET[1]]
+
+    # Image analysis step 2 :
+    # Smoothen the image with gaussian blur
+    blurredImage = cv2.GaussianBlur(grayImageTruncated, ksize=(11, 9), sigmaX=0)
+
+    # Image analysis step 3 :
+    # Enhance contrast for very smooth images within a centered circle
+    enhancedContrastImage = enhanceContrast(blurredImage)
+
+    # Image analysis step 4 :
+    # Apply Laplacian operator on image
+    laplacianImage = cv2.Laplacian(enhancedContrastImage, cv2.CV_64F, ksize=5)
+
+    # Image analysis step 5 :
+    # Applying again SHRINK_OFFSET to avoid border effect
+    laplacianImageTruncated = laplacianImage[SHRINK_OFFSET[0]:rows - 2 * SHRINK_OFFSET[0],
+                                             SHRINK_OFFSET[1]:cols - 2 * SHRINK_OFFSET[1]]
+
+    # Image analysis step 6 :
     # Apply an asymetrique  smoothing
-    img_lap = cv2.GaussianBlur(img_lap, ksize=(21, 11), sigmaX=0)
-    # img_lap = cv2.GaussianBlur(img_lap, ksize=(17, 9), sigmaX=0)
-    # Define the Kernel for closing algorythme
+    smoothLaplacianImage = cv2.GaussianBlur(laplacianImageTruncated, ksize=(21, 11), sigmaX=0)
+
+    # Image analysis step 7 :
+    # Morphology examination
     MKernel = cv2.getStructuringElement(shape=cv2.MORPH_RECT, ksize=(5, 3), anchor=(3, 1))
-    # MKernel = cv2.getStructuringElement(shape=cv2.MORPH_RECT, ksize=(7, 3), anchor=(3, 1))
-    img_lap = cv2.morphologyEx(img_lap, cv2.MORPH_CLOSE, MKernel, iterations=CLOSING_ITERATIONS)
-    if debug:
-        plt.imshow(img_lap)
-        plt.title("Morphology")
-        plt.show()
+    morphologyExImage = cv2.morphologyEx(smoothLaplacianImage, cv2.MORPH_CLOSE,
+                               MKernel, iterations=CLOSING_ITERATIONS)
+    morphologyExImage[ np.where(morphologyExImage < 0) ] = 0
+    morphologyExImage[ np.where(morphologyExImage >= 255) ] = 0
+    morphologyExImage = np.uint8(morphologyExImage)
 
-    img_lap[ np.where(img_lap < 0) ] = 0
-    img_lap[ np.where(img_lap >= 255) ] = 0
-
-    img_lap8_ini = np.uint8(img_lap)
-
-    if debug:
-        plt.imshow(img_lap8_ini)
-        plt.title("Cutoff")
-        plt.show()
-
+    # Image analysis step 8 :
     # Add white border to image
-    img_lap8 = WhiteBorder(img_lap8_ini[:], WHITE_BORDER[0], WHITE_BORDER[1])
+    img_lap8 = addWhiteBorder(morphologyExImage[:], WHITE_BORDER[0], WHITE_BORDER[1])
 
     # Compute threshold
     seuil_tmp = Seuil_var(img_lap8)
@@ -234,7 +168,7 @@ def find_loop(input_data, rotation=None, debug=False):
     contours, hierarchy = cv2.findContours(img_trait_lap, mode=cv2.RETR_TREE, method=cv2.CHAIN_APPROX_SIMPLE)
     # contour is filtered
     try :
-        contour_list = parcourt_contour(contours, img_lap_color, min_loop_area)
+        contour_list = parcourt_contour(contours, img_lap_color, minLoopArea)
     except :
         raise
 #     If error is traped then there is no loop detected
@@ -286,7 +220,39 @@ def find_loop(input_data, rotation=None, debug=False):
 
     return point
 
-def parcourt_contour(_contours, img, min_loop_area):
+def archiveImage(filename, archiveDir):
+    (file_descriptor, fileBase) = tempfile.mkstemp(prefix="lucid2_", dir=archiveDir)
+    os.close(file_descriptor)
+    suffix = os.path.splitext(filename)[1]
+    shutil.copy(filename, fileBase + suffix)
+    os.remove(os.path.join(archiveDir, fileBase))
+
+def loadGrayImage(filename, rotation):
+    # Read image
+    image = cv2.imread(filename)
+    # Convert to image
+    grayImage = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY);
+    # Take into account rotation
+    if rotation is not None:
+        # Image assumed to be rotated 90 degrees anti-clockwise
+        grayImage = np.rot90(grayImage, k=3)
+    return grayImage
+
+def enhanceContrast(image):
+    enhancedContrastImage = image.copy()
+    rows, cols = image.shape
+    center = [int(cols / 2), int(rows / 2)]
+    radius = min(center[0], center[1])
+    Y, X = np.ogrid[:rows, :cols]
+    dist_from_center = np.sqrt((X - center[0]) ** 2 + (Y - center[1]) ** 2)
+    mask1 = dist_from_center <= radius
+    mask2 = np.ones((rows, cols), dtype=image.dtype) - mask1
+    img_gray_masked = image * mask1 + mask2 * 100
+    enhancedContrastImage[ np.where(img_gray_masked < 20) ] = 0
+    return enhancedContrastImage
+
+
+def parcourt_contour(_contours, img, minLoopArea):
     """
     This fonction is a seq contours filter. Contours are selectionned by applying AIRE and lengh critera.
        
@@ -321,7 +287,7 @@ def parcourt_contour(_contours, img, min_loop_area):
     print(lengh)
 
     # if Current contour lengh or Aire is upper than reference
-    if(lengh > MIN_CONTOUR_LENGTH or Area > min_loop_area):
+    if(lengh > MIN_CONTOUR_LENGTH or Area > minLoopArea):
         # increament contour kept counter
         count = count + 1
         # Seq is put in buffer
@@ -352,7 +318,7 @@ def parcourt_contour(_contours, img, min_loop_area):
         # Compute lengh of contour
         lengh = len(seq)
         # If lengh or Area is upper limit value contour is kept
-        if(lengh > MIN_CONTOUR_LENGTH or Area > min_loop_area):
+        if(lengh > MIN_CONTOUR_LENGTH or Area > minLoopArea):
             count = count + 1
             Seq_triee = seq
             # If contour have the maximal area
@@ -365,7 +331,8 @@ def parcourt_contour(_contours, img, min_loop_area):
                 Contour_Keep.append(Seq_triee)
         # Else if there is upper contours
     return Contour_Keep
-def WhiteBorder(img, XSize, YSize):
+
+def addWhiteBorder(img, XSize, YSize):
     """
     This fonction add white border to an image
 
