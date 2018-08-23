@@ -23,13 +23,13 @@
 #
 # ############################################################################*/
 """
-Lucid 3 project - core 
+Lucid 3 project - core module
 """
 
 __author__ = "Olof Svensson"
 __contact__ = "svensson@esrf.eu"
 __copyright__ = "ESRF, 2017"
-__updated__ = "2018-08-20"
+__updated__ = "2018-08-23"
 
 # This code is a complete re-factoring of the "lucid2" code written by Sogeti,
 # see : https://github.com/mxcube/lucid2
@@ -68,6 +68,9 @@ CRIT_MOD_SUP = 1
 CRIT_MOD_LOOP = 2
 CRIT_MOD_NARROW = 3
 
+# Default threshold value
+DEFAULT_THRESHOLD = 20
+
 def find_loop(filename, rotation=None, debug=False, archiveDir=None):
     """
       This function detect support (or loop).
@@ -88,33 +91,35 @@ def find_loop(filename, rotation=None, debug=False, archiveDir=None):
     imageArea = rows * cols
     minLoopArea = imageArea * MIN_REL_LOOP_AREA
 
-    # Image analysis step 1 :
+    # Image analysis
+
+    # Step 1 :
     # Removing borders of size SHRINK_OFFSET from image
     grayImageTruncated = grayImage[SHRINK_OFFSET[0]:rows - 2 * SHRINK_OFFSET[0],
                                    SHRINK_OFFSET[1]:cols - 2 * SHRINK_OFFSET[1]]
 
-    # Image analysis step 2 :
+    # Step 2 :
     # Smoothen the image with gaussian blur
     blurredImage = cv2.GaussianBlur(grayImageTruncated, ksize=(11, 9), sigmaX=0)
 
-    # Image analysis step 3 :
+    # Step 3 :
     # Enhance contrast for very smooth images within a centered circle
     enhancedContrastImage = enhanceContrast(blurredImage)
 
-    # Image analysis step 4 :
+    # Step 4 :
     # Apply Laplacian operator on image
     laplacianImage = cv2.Laplacian(enhancedContrastImage, cv2.CV_64F, ksize=5)
 
-    # Image analysis step 5 :
+    # Step 5 :
     # Applying again SHRINK_OFFSET to avoid border effect
     laplacianImageTruncated = laplacianImage[SHRINK_OFFSET[0]:rows - 2 * SHRINK_OFFSET[0],
                                              SHRINK_OFFSET[1]:cols - 2 * SHRINK_OFFSET[1]]
 
-    # Image analysis step 6 :
+    # Step 6 :
     # Apply an asymetrique  smoothing
     smoothLaplacianImage = cv2.GaussianBlur(laplacianImageTruncated, ksize=(21, 11), sigmaX=0)
 
-    # Image analysis step 7 :
+    # Step 7 :
     # Morphology examination
     MKernel = cv2.getStructuringElement(shape=cv2.MORPH_RECT, ksize=(5, 3), anchor=(3, 1))
     morphologyExImage = cv2.morphologyEx(smoothLaplacianImage, cv2.MORPH_CLOSE,
@@ -123,52 +128,34 @@ def find_loop(filename, rotation=None, debug=False, archiveDir=None):
     morphologyExImage[ np.where(morphologyExImage >= 255) ] = 0
     morphologyExImage = np.uint8(morphologyExImage)
 
-    # Image analysis step 8 :
+    # Step 8 :
     # Add white border to image
-    img_lap8 = addWhiteBorder(morphologyExImage[:], WHITE_BORDER[0], WHITE_BORDER[1])
+    whiteBorderImage = addWhiteBorder(morphologyExImage[:], WHITE_BORDER[0], WHITE_BORDER[1])
 
-    # Compute threshold
-    seuil_tmp = Seuil_var(img_lap8)
-    # If Seuil_tmp is not null
-    if seuil_tmp != 0:
-        seuil = seuil_tmp
-    # Else seuil is fixed to 20, which prevent from wrong positiv detection
-    else :
-        seuil = 20
-    print("Seuil: {0}".format(seuil))
+    # Step 9 : Compute and apply threshold
+    threshold = computeThreshold(whiteBorderImage)
+    ret, thresholdImage = cv2.threshold(whiteBorderImage, threshold, 255, 0)
 
-    # Compute thresholded image
-    ret, img_lap_bi = cv2.threshold(img_lap8, seuil, 255, 0)
-    if debug:
-        plt.imshow(img_lap_bi)
-        plt.title("Threshold")
-        plt.show()
-    # Gaussian smoothing on laplacian
-    img_lap_bi = cv2.GaussianBlur(img_lap_bi, ksize=(11, 11), sigmaX=0)
-    # img_lap_bi = cv2.GaussianBlur(img_lap_bi, ksize=(15, 15), sigmaX=0)
-    # Convert grayscale laplacian image to binarie image using "seuil" as threshold value
-    ret, img_lap_bi = cv2.threshold(img_lap_bi, seuil, 255, cv2.THRESH_BINARY_INV)
-    if debug:
-        plt.imshow(img_lap_bi)
-        plt.title("Gaussian blur")
-        plt.show()
-    img_lap_color = img_lap_bi
-    img_trait_lap = cv2.Canny(img_lap_bi, 0, 2)
+    # Step 10: Gaussian smoothing
+    imageSmoothThreshold = cv2.GaussianBlur(thresholdImage, ksize=(11, 11), sigmaX=0)
+
+    # Step 10 : Compute and apply threshold
+    # Convert grayscale laplacian image to binarie image using "threshold" as threshold value
+    ret, imageSmoothThreshold2 = cv2.threshold(imageSmoothThreshold, threshold, 255, cv2.THRESH_BINARY_INV)
+
+    # Step 11 : Edge detection
+    img_trait_lap = cv2.Canny(imageSmoothThreshold2, 0, 2)
+
+    # Step 12 : Dilate edges in order to close contours
     kernel = np.ones((3, 3), np.uint8)
     img_trait_lap = cv2.dilate(img_trait_lap, kernel, iterations=1)
-    if debug:
-        plt.imshow(img_trait_lap)
-        plt.title("Contours")
-        plt.show()
-# img_lap[ np.where(img_lap < 0) ] = 0
-#         cv2.imshow("Canny", img_trait_lap)
-#     cv2.waitKey(0)
 
-    # Find contour
+    # Step 13 : Find contours
     contours, hierarchy = cv2.findContours(img_trait_lap, mode=cv2.RETR_TREE, method=cv2.CHAIN_APPROX_SIMPLE)
+
     # contour is filtered
     try :
-        contour_list = parcourt_contour(contours, img_lap_color, minLoopArea)
+        contour_list = parcourt_contour(contours, imageSmoothThreshold2, minLoopArea)
     except :
         raise
 #     If error is traped then there is no loop detected
@@ -178,7 +165,7 @@ def find_loop(filename, rotation=None, debug=False, archiveDir=None):
     NCont = len(contour_list)
     if(NCont > 0):
         #     The CvSeq is inversed : X(i) became i(X)
-        rows, cols = img_lap_color.shape
+        rows, cols = imageSmoothThreshold2.shape
         indice = MapCont(contour_list[0], cols, rows)
         #     The coordinate of target is computed in the traited image
         point_shift = integreCont(indice, contour_list[0])
@@ -350,12 +337,12 @@ def addWhiteBorder(img, XSize, YSize):
     output_mat[0:cutoff_size, 0:cutoff_size] = 0
     output_mat[s0 - cutoff_size:s0, 0:cutoff_size] = 0
     return output_mat
-def Seuil_var(img):
+def computeThreshold(img):
     """
     This fonction compute threshold value. In first the image's histogram is calculated. The threshold value is set to the first indexe of histogram wich respect the following criterion : DH > 0, DH(i)/H(i) > 0.1 , H(i) < 0.01 % of the Norm. 
 
     In : img : ipl Image : image to treated
-    Out: seuil : Int : Value of the threshold 
+    Out: threshold : Int : Value of the threshold 
     """
     dim = 255
     MaxValue = np.amax(np.asarray(img[:]))
@@ -376,11 +363,17 @@ def Seuil_var(img):
             return 0
 
     if(i == len(hist) - 1):
-        seuil = 0
+        threshold = 0
     else:
-        seuil = i
+        threshold = i
 
-    return seuil
+    # Default threshold value if no threshold found
+    if threshold == 0:
+        threshold = DEFAULT_THRESHOLD
+
+    # print("Seuil: {0}".format(threshold))
+
+    return threshold
 
 # Draw contour from list of tuples.
 def MapCont(Cont, s0, s1):
