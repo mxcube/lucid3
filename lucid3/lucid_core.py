@@ -159,21 +159,21 @@ def find_loop(filename, rotation=None, debug=False, archiveDir=None):
     imageSmoothThreshold = cv2.GaussianBlur(thresholdImage, ksize=(11, 11), sigmaX=0)
     debugPlot(imageSmoothThreshold, "smooth threshold image", debug)
 
-    # Step 10 : Compute and apply threshold
+    # Step 11 : Compute and apply threshold
     # Convert grayscale laplacian image to binarie image using "threshold" as threshold value
     ret, imageSmoothThreshold2 = cv2.threshold(imageSmoothThreshold, threshold, 255, cv2.THRESH_BINARY_INV)
     debugPlot(imageSmoothThreshold2, "Second smooth threshold image", debug)
 
-    # Step 11 : Edge detection
+    # Step 12 : Edge detection
     imageEdges = cv2.Canny(imageSmoothThreshold2, 0, 2)
     debugPlot(imageEdges, "Edge detection", debug)
 
-    # Step 12 : Dilate edges in order to close contours
+    # Step 13 : Dilate edges in order to close contours
     kernel = np.ones((3, 3), np.uint8)
     imageEdgesDilated = cv2.dilate(imageEdges, kernel, iterations=1)
     debugPlot(imageEdgesDilated, "Edges dilated", debug)
 
-    # Step 13 : Find contours
+    # Step 14 : Find contours
     contours, hierarchy = cv2.findContours(imageEdgesDilated, mode=cv2.RETR_TREE, method=cv2.CHAIN_APPROX_SIMPLE)
 
     maxAreaContour = findMaxAreaContour(contours, minLoopArea)
@@ -352,10 +352,9 @@ def mapContour(contour, s0):
 
     """
     listIndices = []
-
     for i in range(0, s0):
-        result = [index for index, item in enumerate(contour) if checkIfX(item, i)]
-        listIndices.append(result)
+        listResult = list(np.where(contour[:, :, 0] == i)[0])
+        listIndices.append(listResult)
     return listIndices
 
 
