@@ -62,10 +62,10 @@ class Test(unittest.TestCase):
         print("OpenCV Version : %s " % cv2.__version__)
 #        directory = "/scisoft/pxsoft/data/WORKFLOW_TEST_DATA/id30a1/snapshots/snapshots_20160718-152813_Gow8z5"
 #        path = "/scisoft/pxsoft/data/WORKFLOW_TEST_DATA/id30a1/snapshots/*/*_???.png"
-        path = "/scisoft/pxsoft/data/lucid/reference/id30a1/*.png"
+        # path = "/scisoft/pxsoft/data/lucid/reference/id30a1/*.png"
         # path = "/scisoft/pxsoft/data/lucid/reference/id23eh2/*.png"
         # path = "/scisoft/pxsoft/data/lucid/reference/id30b/*.png"
-        # path = "/scisoft/pxsoft/data/lucid/reference/*/*.png"
+        path = "/scisoft/pxsoft/data/lucid/reference/*/*.png"
 #        directory = "/scisoft/pxsoft/data/WORKFLOW_TEST_DATA/id29/snapshots/20170823"
 #        directory = "/scisoft/pxsoft/data/WORKFLOW_TEST_DATA/id23eh2/snapshots/2070704"
 #        directory = "/scisoft/pxsoft/data/WORKFLOW_TEST_DATA/id23eh2/snapshots/20170822"
@@ -145,11 +145,11 @@ class Test(unittest.TestCase):
                 if ImagePosition.xPos is not None:
                     implot = plt.imshow(image, extent=extent)
                     plt.title(fileName)
-                    if xPos is not None:
-                        plt.plot(xPos, yPos, marker='+', markeredgewidth=2,
-                                 markersize=20, color='black')
                     if xPosRef != "None":
                         plt.plot(float(xPosRef), float(yPosRef), marker='+', markeredgewidth=2,
+                                 markersize=20, color='black')
+                    if xPos is not None:
+                        plt.plot(xPos, yPos, marker='+', markeredgewidth=2,
                                  markersize=20, color='red')
                     plt.plot(float(ImagePosition.xPos), float(ImagePosition.yPos), marker='+', markeredgewidth=2,
                              markersize=20, color='green')
@@ -161,10 +161,12 @@ class Test(unittest.TestCase):
                                                                    suffix)
                 else:
                     newFileName = "{0}_None_None.{1}".format(md5sum, suffix)
-                print(newFileName)
+                print("Old file name: {0}".format(fileName))
+                print("New file name: {0}".format(newFileName))
                 saveChanges = raw_input("Save changes? yes/no: ")
                 if saveChanges.lower() == "yes":
                     os.rename(filePath, os.path.join(os.path.dirname(filePath), newFileName))
+                    print("Changes saved.")
 
 
 

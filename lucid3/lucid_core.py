@@ -71,6 +71,11 @@ CRIT_MOD_NARROW = 3
 # Default threshold value
 DEFAULT_THRESHOLD = 20
 
+# Default enhanced contrast threshold value
+DEFAULT_ENHANCED_CONTRAST_THRESHOLD = 25
+
+
+
 def find_loop(filename, rotation=None, debug=False, archiveDir=None):
     """
       This function detect support (or loop).
@@ -202,19 +207,21 @@ def find_loop(filename, rotation=None, debug=False, archiveDir=None):
             if rotation is not None:
                 point = (point[0], point[2], cols - point[1])
             if debug:
-                image = scipy.misc.imread(input_data, flatten=True)
+                image = scipy.misc.imread(filename, flatten=True)
                 imgshape = image.shape
                 extent = (0, imgshape[1], 0, imgshape[0])
                 implot = plt.imshow(image, extent=extent, cmap='gray')
-                plt.title(fileBase)
+                fileBase = os.path.splitext(os.path.basename(filename))[0]
+                plt.title(os.path.basename(filename))
                 if point[0] == 'Coord':
                     xPos = point[1]
                     yPos = imgshape[0] - point[2]
                     plt.plot(xPos, yPos, marker='+', markeredgewidth=2,
                              markersize=20, color='red')
-                newFileName = os.path.join(archiveDir, fileBase + "_marked.png")
-                print("Saving image to " + newFileName)
-                plt.savefig(newFileName)
+                # newFileName = os.path.join(archiveDir, fileBase + "_marked.png")
+                # print("Saving image to " + newFileName)
+                # plt.savefig(newFileName)
+                plt.show()
                 plt.close()
 
 
@@ -256,13 +263,13 @@ def enhanceContrast(image):
     mask1 = dist_from_center <= radius
     mask2 = np.ones((rows, cols), dtype=image.dtype) - mask1
     img_gray_masked = image * mask1 + mask2 * 100
-    enhancedContrastImage[ np.where(img_gray_masked < 20) ] = 0
+    enhancedContrastImage[ np.where(img_gray_masked < DEFAULT_ENHANCED_CONTRAST_THRESHOLD) ] = 0
     return enhancedContrastImage
 
 
 def findMaxAreaContour(contours, minLoopArea):
     """
-    This function finds the longest contour with area > minLoopArea and length > MIN_CONTOUR_LENGTH
+    This function finds the contour with area > minLoopArea or length > MIN_CONTOUR_LENGTH
     """
     maxAreaContour = None
     maxContour = None
@@ -270,7 +277,7 @@ def findMaxAreaContour(contours, minLoopArea):
         length = len(contour)
         area = cv2.contourArea(contour)
         # print(area, length)
-        if area > minLoopArea and length > MIN_CONTOUR_LENGTH:
+        if area > minLoopArea or length > MIN_CONTOUR_LENGTH:
             if maxAreaContour is None or maxAreaContour < area:
                 maxAreaContour = area
                 maxContour = contour
