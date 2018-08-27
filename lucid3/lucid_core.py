@@ -77,7 +77,7 @@ DEFAULT_ENHANCED_CONTRAST_RADIUS = 1.0
 
 
 
-def find_loop(filename, rotation=None, debug=False, archiveDir=None):
+def find_loop(filename, rotation=None, debug=False, archiveDir=None, IterationClosing=CLOSING_ITERATIONS):
     """
       This function detect support (or loop).
       in : filename : string image Filename / Format accepted :
@@ -148,7 +148,7 @@ def find_loop(filename, rotation=None, debug=False, archiveDir=None):
     else:
         MKernel = cv2.getStructuringElement(shape=cv2.MORPH_RECT, ksize=(3, 5), anchor=(1, 3))
     morphologyExImage = cv2.morphologyEx(smoothLaplacianImage, cv2.MORPH_CLOSE,
-                               MKernel, iterations=CLOSING_ITERATIONS)
+                               MKernel, iterations=IterationClosing)
     morphologyExImage[ np.where(morphologyExImage < 0) ] = 0
     morphologyExImage[ np.where(morphologyExImage >= 255) ] = 0
     morphologyExImage = np.uint8(morphologyExImage)
