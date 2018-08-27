@@ -42,6 +42,12 @@ import scipy.misc
 import numpy as np
 import matplotlib.pyplot as plt
 
+# Find out if we are using OpenCV version 3:
+if cv2.__version__.split(".")[0] == "3":
+    OPENCV3 = True
+else:
+    OPENCV3 = False
+
 # Offset applied to shrink initial image in order to avoid border effect
 SHRINK_OFFSET = (4, 4)
 
@@ -185,7 +191,10 @@ def find_loop(filename, rotation=None, debug=False, archiveDir=None, IterationCl
     debugPlot(imageEdgesDilated, "Edges dilated", debug)
 
     # Step 14 : Find contours
-    contours, hierarchy = cv2.findContours(imageEdgesDilated, mode=cv2.RETR_TREE, method=cv2.CHAIN_APPROX_SIMPLE)
+    if OPENCV3:
+        img, contours, hierarchy = cv2.findContours(imageEdgesDilated, mode=cv2.RETR_TREE, method=cv2.CHAIN_APPROX_SIMPLE)
+    else:
+        contours, hierarchy = cv2.findContours(imageEdgesDilated, mode=cv2.RETR_TREE, method=cv2.CHAIN_APPROX_SIMPLE)
 
     maxAreaContour = findMaxAreaContour(contours, minLoopArea, debug=debug)
     if debug:
