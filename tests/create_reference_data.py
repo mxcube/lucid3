@@ -55,8 +55,10 @@ def md5(fname):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
 
-snapshotDir = "/data/id30a3/inhouse/opid30a3/snapshots/"
-savePath = "/scisoft/pxsoft/data/lucid/reference/id30a3"
+# snapshotDir = "/data/id30a3/inhouse/opid30a3/snapshots/"
+# savePath = "/scisoft/pxsoft/data/lucid/reference/id30a3"
+snapshotDir = "/data/id23eh1/inhouse/opid231/snapshots/"
+savePath = "/scisoft/pxsoft/data/lucid/reference/id23eh1"
 if not os.path.exists(savePath):
     os.makedirs(savePath, 0755)
 
@@ -84,6 +86,10 @@ for filePath in glob.glob(os.path.join(snapshotDir, "*.png")):
 #            plt.show()
     if not marked:
         print filePath
+        if "id23eh2" in filePath:
+            rotationStr = "_vertical"
+        else:
+            rotationStr = ""
         xPos = None
         yPos = None
         fileName = os.path.basename(filePath)
@@ -116,11 +122,12 @@ for filePath in glob.glob(os.path.join(snapshotDir, "*.png")):
                 print "Click to reposition marker or close window if marker correctly set"
                 plt.show()
         if xPos is None:
-            newFileName = "{0}_None_None.{1}".format(md5sumFirst10, suffix)
+            newFileName = "{0}_None_None{1}.{2}".format(md5sumFirst10, rotationStr, suffix)
         else:
-            newFileName = "{0}_{1:04d}_{2:04d}.{3}".format(md5sumFirst10,
+            newFileName = "{0}_{1:04d}_{2:04d}{3}.{4}".format(md5sumFirst10,
                                                            int(round(float(xPos), 0)),
                                                            int(round(float(yPos), 0)),
+                                                           rotationStr,
                                                            suffix)
         print(newFileName)
         shutil.copy(filePath, os.path.join(savePath, newFileName))

@@ -72,7 +72,8 @@ CRIT_MOD_NARROW = 3
 DEFAULT_THRESHOLD = 20
 
 # Default enhanced contrast threshold value
-DEFAULT_ENHANCED_CONTRAST_THRESHOLD = 25
+DEFAULT_ENHANCED_CONTRAST_THRESHOLD = 20
+DEFAULT_ENHANCED_CONTRAST_RADIUS = 1.0
 
 
 
@@ -109,7 +110,10 @@ def find_loop(filename, rotation=None, debug=False, archiveDir=None):
 
     # Step 2 :
     # Smoothen the image with gaussian blur
-    blurredImage = cv2.GaussianBlur(grayImageTruncated, ksize=(11, 9), sigmaX=0)
+    if rotation is None:
+        blurredImage = cv2.GaussianBlur(grayImageTruncated, ksize=(11, 9), sigmaX=0)
+    else:
+        blurredImage = cv2.GaussianBlur(grayImageTruncated, ksize=(9, 11), sigmaX=0)
     debugPlot(blurredImage, "Gray image blurred", debug)
 
     # Step 3 :
@@ -130,12 +134,19 @@ def find_loop(filename, rotation=None, debug=False, archiveDir=None):
 
     # Step 6 :
     # Apply an asymetrique  smoothing
-    smoothLaplacianImage = cv2.GaussianBlur(laplacianImageTruncated, ksize=(21, 11), sigmaX=0)
+    # if rotation is None:
+    if False:
+        smoothLaplacianImage = cv2.GaussianBlur(laplacianImageTruncated, ksize=(21, 11), sigmaX=0)
+    else:
+        smoothLaplacianImage = cv2.GaussianBlur(laplacianImageTruncated, ksize=(11, 21), sigmaX=0)
     debugPlot(smoothLaplacianImage, "Smooth laplacian image truncated", debug)
 
     # Step 7 :
     # Morphology examination
-    MKernel = cv2.getStructuringElement(shape=cv2.MORPH_RECT, ksize=(5, 3), anchor=(3, 1))
+    if rotation is None:
+        MKernel = cv2.getStructuringElement(shape=cv2.MORPH_RECT, ksize=(5, 3), anchor=(3, 1))
+    else:
+        MKernel = cv2.getStructuringElement(shape=cv2.MORPH_RECT, ksize=(3, 5), anchor=(1, 3))
     morphologyExImage = cv2.morphologyEx(smoothLaplacianImage, cv2.MORPH_CLOSE,
                                MKernel, iterations=CLOSING_ITERATIONS)
     morphologyExImage[ np.where(morphologyExImage < 0) ] = 0
@@ -176,7 +187,7 @@ def find_loop(filename, rotation=None, debug=False, archiveDir=None):
     # Step 14 : Find contours
     contours, hierarchy = cv2.findContours(imageEdgesDilated, mode=cv2.RETR_TREE, method=cv2.CHAIN_APPROX_SIMPLE)
 
-    maxAreaContour = findMaxAreaContour(contours, minLoopArea)
+    maxAreaContour = findMaxAreaContour(contours, minLoopArea, debug=debug)
     if debug:
         print("Max area contour: {0}".format(maxAreaContour))
 
@@ -257,22 +268,26 @@ def enhanceContrast(image):
     enhancedContrastImage = image.copy()
     rows, cols = image.shape
     center = [int(cols / 2), int(rows / 2)]
-    radius = min(center[0], center[1])
+    # print(center)
+    radius = min(center[0], center[1]) * DEFAULT_ENHANCED_CONTRAST_RADIUS
+    # print(radius)
     yGrid, xGrid = np.ogrid[:rows, :cols]
     dist_from_center = np.sqrt((xGrid - center[0]) ** 2 + (yGrid - center[1]) ** 2)
     mask1 = dist_from_center <= radius
     mask2 = np.ones((rows, cols), dtype=image.dtype) - mask1
     img_gray_masked = image * mask1 + mask2 * 100
+    # debugPlot(img_gray_masked, "Mask 1", True)
     enhancedContrastImage[ np.where(img_gray_masked < DEFAULT_ENHANCED_CONTRAST_THRESHOLD) ] = 0
     return enhancedContrastImage
 
 
-def findMaxAreaContour(contours, minLoopArea):
+def findMaxAreaContour(contours, minLoopArea, debug=False):
     """
     This function finds the contour with area > minLoopArea or length > MIN_CONTOUR_LENGTH
     """
     maxAreaContour = None
     maxContour = None
+    maxLength = None
     for contour in contours:
         length = len(contour)
         area = cv2.contourArea(contour)
@@ -281,6 +296,10 @@ def findMaxAreaContour(contours, minLoopArea):
             if maxAreaContour is None or maxAreaContour < area:
                 maxAreaContour = area
                 maxContour = contour
+                maxLength = length
+    if debug:
+        print("Contour area: {0}".format(maxAreaContour))
+        print("Contour length: {0}".format(maxLength))
     return maxContour
 
 
