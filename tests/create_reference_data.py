@@ -57,8 +57,10 @@ def md5(fname):
 
 # snapshotDir = "/data/id30a3/inhouse/opid30a3/snapshots/"
 # savePath = "/scisoft/pxsoft/data/lucid/reference/id30a3"
-snapshotDir = "/data/id23eh1/inhouse/opid231/snapshots/"
-savePath = "/scisoft/pxsoft/data/lucid/reference/id23eh1"
+# snapshotDir = "/data/id23eh1/inhouse/opid231/snapshots/"
+# savePath = "/scisoft/pxsoft/data/lucid/reference/id23eh1"
+snapshotDir = "/data/id23eh2/inhouse/opid232/snapshots/"
+savePath = "/scisoft/pxsoft/data/lucid/reference/id23eh2"
 if not os.path.exists(savePath):
     os.makedirs(savePath, 0755)
 

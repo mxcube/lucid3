@@ -78,9 +78,9 @@ CRIT_MOD_NARROW = 3
 DEFAULT_THRESHOLD = 20
 
 # Default enhanced contrast threshold value
-DEFAULT_ENHANCED_CONTRAST_THRESHOLD = 20
-DEFAULT_ENHANCED_CONTRAST_RADIUS = 1.0
-
+ENHANCED_CONTRAST_REL_THRESHOLD = 0.25
+ENHANCED_CONTRAST_REL_RADIUS = 0.8
+ENHANCED_CONTRAST_MAX_THRESHOLD = 25
 
 
 def find_loop(filename, rotation=None, debug=False, archiveDir=None, IterationClosing=CLOSING_ITERATIONS):
@@ -116,10 +116,7 @@ def find_loop(filename, rotation=None, debug=False, archiveDir=None, IterationCl
 
     # Step 2 :
     # Smoothen the image with gaussian blur
-    if rotation is None:
-        blurredImage = cv2.GaussianBlur(grayImageTruncated, ksize=(11, 9), sigmaX=0)
-    else:
-        blurredImage = cv2.GaussianBlur(grayImageTruncated, ksize=(9, 11), sigmaX=0)
+    blurredImage = cv2.GaussianBlur(grayImageTruncated, ksize=(11, 9), sigmaX=0)
     debugPlot(blurredImage, "Gray image blurred", debug)
 
     # Step 3 :
@@ -141,18 +138,12 @@ def find_loop(filename, rotation=None, debug=False, archiveDir=None, IterationCl
     # Step 6 :
     # Apply an asymetrique  smoothing
     # if rotation is None:
-    if False:
-        smoothLaplacianImage = cv2.GaussianBlur(laplacianImageTruncated, ksize=(21, 11), sigmaX=0)
-    else:
-        smoothLaplacianImage = cv2.GaussianBlur(laplacianImageTruncated, ksize=(11, 21), sigmaX=0)
+    smoothLaplacianImage = cv2.GaussianBlur(laplacianImageTruncated, ksize=(21, 11), sigmaX=0)
     debugPlot(smoothLaplacianImage, "Smooth laplacian image truncated", debug)
 
     # Step 7 :
     # Morphology examination
-    if rotation is None:
-        MKernel = cv2.getStructuringElement(shape=cv2.MORPH_RECT, ksize=(5, 3), anchor=(3, 1))
-    else:
-        MKernel = cv2.getStructuringElement(shape=cv2.MORPH_RECT, ksize=(3, 5), anchor=(1, 3))
+    MKernel = cv2.getStructuringElement(shape=cv2.MORPH_RECT, ksize=(5, 3), anchor=(3, 1))
     morphologyExImage = cv2.morphologyEx(smoothLaplacianImage, cv2.MORPH_CLOSE,
                                MKernel, iterations=IterationClosing)
     morphologyExImage[ np.where(morphologyExImage < 0) ] = 0
@@ -172,8 +163,12 @@ def find_loop(filename, rotation=None, debug=False, archiveDir=None, IterationCl
     ret, thresholdImage = cv2.threshold(whiteBorderImage, threshold, 255, 0)
     debugPlot(thresholdImage, "Threshold image", debug)
 
+    # Step 9a : Right white border
+    rightBorder = addWhiteBorderRight(thresholdImage[:], WHITE_BORDER[0], WHITE_BORDER[1])
+    debugPlot(thresholdImage, "Right border image", debug)
+
     # Step 10: Gaussian smoothing
-    imageSmoothThreshold = cv2.GaussianBlur(thresholdImage, ksize=(11, 11), sigmaX=0)
+    imageSmoothThreshold = cv2.GaussianBlur(rightBorder, ksize=(11, 11), sigmaX=0)
     debugPlot(imageSmoothThreshold, "smooth threshold image", debug)
 
     # Step 11 : Compute and apply threshold
@@ -218,11 +213,9 @@ def find_loop(filename, rotation=None, debug=False, archiveDir=None, IterationCl
                  pointShifted[2] + 2 * SHRINK_OFFSET[1] - WHITE_BORDER[1])
 
         # Mask the lower and upper right corners
-        if point[1] < cols * 0.2:
-            if point[2] < rows * 0.2 or \
-               (rows - point[2]) < rows * 0.2:
-                # No loop is detected
-                point = ("No loop detected", -1, -1)
+        if point[1] < cols * 0.2 and (point[2] < rows * 0.2 or (rows - point[2]) < rows * 0.2):
+            # No loop is detected
+            point = ("No loop detected", -1, -1)
         else:
             if rotation is not None:
                 point = (point[0], point[2], cols - point[1])
@@ -275,10 +268,12 @@ def loadGrayImage(filename, rotation):
 
 def enhanceContrast(image):
     enhancedContrastImage = image.copy()
+    maxImage = np.max(enhancedContrastImage)
+    print(maxImage)
     rows, cols = image.shape
     center = [int(cols / 2), int(rows / 2)]
     # print(center)
-    radius = min(center[0], center[1]) * DEFAULT_ENHANCED_CONTRAST_RADIUS
+    radius = min(center[0], center[1]) * ENHANCED_CONTRAST_REL_RADIUS
     # print(radius)
     yGrid, xGrid = np.ogrid[:rows, :cols]
     dist_from_center = np.sqrt((xGrid - center[0]) ** 2 + (yGrid - center[1]) ** 2)
@@ -286,7 +281,10 @@ def enhanceContrast(image):
     mask2 = np.ones((rows, cols), dtype=image.dtype) - mask1
     img_gray_masked = image * mask1 + mask2 * 100
     # debugPlot(img_gray_masked, "Mask 1", True)
-    enhancedContrastImage[ np.where(img_gray_masked < DEFAULT_ENHANCED_CONTRAST_THRESHOLD) ] = 0
+    contrastThreshold = min(ENHANCED_CONTRAST_REL_THRESHOLD * maxImage,
+                            ENHANCED_CONTRAST_MAX_THRESHOLD)
+    # print(contrastThreshold)
+    enhancedContrastImage[ np.where(img_gray_masked < contrastThreshold) ] = 0
     return enhancedContrastImage
 
 
@@ -332,6 +330,24 @@ def addWhiteBorder(img, XSize, YSize):
     output_mat[s0 - cutoff_size:s0, 0:cutoff_size] = 0
     return output_mat
 
+def addWhiteBorderRight(img, XSize, YSize):
+    """
+    This fonction add white border to an image
+
+    In : img : numpy array : input image
+    In : XSize : int: width of white border
+    In : YSize : int: heigh of white border
+    Out : ouput_mat : numpy array : Output image copy of input one added of white border 
+    """
+    s0, s1 = img.shape
+    dtypeI = img.dtype
+    output_mat = np.zeros((s0, s1 + YSize), dtype=dtypeI)
+    output_mat[:, 0:s1] = img[:, :]
+    # Clear corners
+    cutoff_size = 50
+    output_mat[0:cutoff_size, 0:cutoff_size] = 0
+    output_mat[s0 - cutoff_size:s0, 0:cutoff_size] = 0
+    return output_mat
 
 def computeThreshold(image):
     """
@@ -355,7 +371,7 @@ def computeThreshold(image):
     while ((hist[i] - hist[i - 1] < 0 or (hist[i] - hist[i - 1]) / hist[i - 1] > 0.1 or hist[i] > 0.01 * norm) and i < len(hist) - 1):
         i = i + 1
         if hist[i - 1] == 0:
-            return 0
+            break
 
     if(i == len(hist) - 1):
         threshold = 0

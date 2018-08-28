@@ -65,15 +65,11 @@ class Test(unittest.TestCase):
 #        directory = "/scisoft/pxsoft/data/WORKFLOW_TEST_DATA/id30a1/snapshots/snapshots_20160718-152813_Gow8z5"
 #        path = "/scisoft/pxsoft/data/WORKFLOW_TEST_DATA/id30a1/snapshots/*/*_???.png"
         # path = "/scisoft/pxsoft/data/lucid/reference/id30a1/*.png"
-        path = "/scisoft/pxsoft/data/lucid/reference/id23eh1/*.png"
+        # path = "/scisoft/pxsoft/data/lucid/reference/id23eh1/*.png"
         # path = "/scisoft/pxsoft/data/lucid/reference/id23eh2/*.png"
         # path = "/scisoft/pxsoft/data/lucid/reference/id30b/*.png"
-        # path = "/scisoft/pxsoft/data/lucid/reference/*/*.png"
-        # path = "/tmp_14_days/svensson/lucid3/failed/20180827-113617/*.png"
-        # path = "/tmp_14_days/svensson/lucid3/failed/20180827-130708/*.png"
-#        directory = "/scisoft/pxsoft/data/WORKFLOW_TEST_DATA/id29/snapshots/20170823"
-#        directory = "/scisoft/pxsoft/data/WORKFLOW_TEST_DATA/id23eh2/snapshots/2070704"
-#        directory = "/scisoft/pxsoft/data/WORKFLOW_TEST_DATA/id23eh2/snapshots/20170822"
+        path = "/scisoft/pxsoft/data/lucid/reference/*/*.png"
+        # path = "/tmp_14_days/svensson/lucid3/failed/20180828-150848/*.png"
         dateTime = time.strftime("%Y%m%d-%H%M%S", time.localtime(time.time()))
         failedPath = os.path.join("/tmp_14_days/svensson/", "lucid3", "failed", dateTime)
         failedPathMarked = os.path.join("/tmp_14_days/svensson/", "lucid3", "failed_marked", dateTime)
@@ -86,7 +82,11 @@ class Test(unittest.TestCase):
             os.makedirs(successPath, 0755)
         rotation = None
         maxDiff = None
+        index = 0
         for filePath in glob.glob(path):
+            index += 1
+            print("*"*80)
+            print("Image no {0}".format(index))
             print(filePath)
             if "id23eh2" in filePath:
                 rotation = -90.0
