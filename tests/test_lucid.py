@@ -69,17 +69,17 @@ class Test(unittest.TestCase):
         # path = "/scisoft/pxsoft/data/lucid/reference/id23eh2/*.png"
         # path = "/scisoft/pxsoft/data/lucid/reference/id30b/*.png"
         path = "/scisoft/pxsoft/data/lucid/reference/*/*.png"
-        # path = "/tmp_14_days/svensson/lucid3/failed/20180828-150848/*.png"
+        # path = "/tmp_14_days/svensson/lucid3/failed/20180829-155630/*.png"
         dateTime = time.strftime("%Y%m%d-%H%M%S", time.localtime(time.time()))
         failedPath = os.path.join("/tmp_14_days/svensson/", "lucid3", "failed", dateTime)
         failedPathMarked = os.path.join("/tmp_14_days/svensson/", "lucid3", "failed_marked", dateTime)
         successPath = os.path.join("/tmp_14_days/svensson/", "lucid3", "success")
         if not os.path.exists(failedPath):
-            os.makedirs(failedPath, 0755)
+            os.makedirs(failedPath, 0o755)
         if not os.path.exists(failedPathMarked):
-            os.makedirs(failedPathMarked, 0755)
+            os.makedirs(failedPathMarked, 0o755)
         if not os.path.exists(successPath):
-            os.makedirs(successPath, 0755)
+            os.makedirs(successPath, 0o755)
         rotation = None
         maxDiff = None
         index = 0
@@ -149,11 +149,11 @@ class Test(unittest.TestCase):
                              markersize=20, color='red')
                 cid = implot.figure.canvas.mpl_connect('button_press_event', onclick)
                 newFileName = os.path.join(failedPathMarked, fileTitle + "_marked." + suffix)
-                print "Saving image to " + newFileName
+                print("Saving image to " + newFileName)
                 plt.savefig(newFileName)
                 plt.show()
                 plt.close()
-                if True:
+                if False:
                     if ImagePosition.xPos is not None:
                         implot = plt.imshow(image, extent=extent)
                         plt.title(fileName)

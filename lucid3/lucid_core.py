@@ -368,7 +368,7 @@ def computeThreshold(image):
     while (som < 0.8 * norm and i < len(hist) - 1):
         som = som + hist[i]
         i = i + 1
-    while ((hist[i] - hist[i - 1] < 0 or (hist[i] - hist[i - 1]) / hist[i - 1] > 0.1 or hist[i] > 0.01 * norm) and i < len(hist) - 1):
+    while ((((hist[i] - hist[i - 1]) < 0) or (int((hist[i] - hist[i - 1]) / hist[i - 1]) > 0.1) or (hist[i] > 0.01 * norm)) and (i < len(hist) - 1)):
         i = i + 1
         if hist[i - 1] == 0:
             break
