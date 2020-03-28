@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # 	-*- coding: utf-8 -*-
 
-#from distutils.core import setup
 from setuptools import setup
 
-requirements = ['setuptools', 'python']
+requirements = ['scipy', 'numpy', 'opencv-python>=2.4', 'matplotlib']
 
 setup(name='lucid3',
         version='1.0',
