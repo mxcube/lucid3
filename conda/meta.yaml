@@ -11,17 +11,23 @@ source:
 build:
   number: 0
   noarch: python
-  script: "{{PYTHON}} -m pip install . -vv"
+  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv "
 
 requirements:
   host:
-    - python {{data['python_requires']}}
+    - python {{ data['python_requires'] }}
     - setuptools
+
   run:
-    - python {{data['python_requires']}}
-    {% for dep in data['install_requires'] %}
-    - {{ dep.lower()}}
-    {% endfor %}
+    - python {{ data['python_requires'] }}
+    - scipy
+    - numpy
+    - py-opencv>=2.4
+    - matplotlib
+
+test:
+  imports:
+    - {{data.get('name')}}
 
 about:
   home: {{ data.get('url')}}
