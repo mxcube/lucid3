@@ -38,7 +38,7 @@ import os
 import cv2
 import shutil
 import tempfile
-import scipy.misc
+import imageio
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -220,7 +220,7 @@ def find_loop(filename, rotation=None, debug=False, archiveDir=None, IterationCl
             if rotation is not None:
                 point = (point[0], point[2], cols - point[1])
             if debug:
-                image = scipy.misc.imread(filename, flatten=True)
+                image = imageio.imread(filename, as_gray=True)
                 imgshape = image.shape
                 extent = (0, imgshape[1], 0, imgshape[0])
                 implot = plt.imshow(image, extent=extent, cmap='gray')
