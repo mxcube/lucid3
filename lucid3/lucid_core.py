@@ -40,6 +40,8 @@ import shutil
 import tempfile
 import scipy.misc
 import numpy as np
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 
 # Find out if we are using OpenCV version 3:
