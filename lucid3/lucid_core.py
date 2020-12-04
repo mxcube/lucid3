@@ -40,6 +40,8 @@ import shutil
 import tempfile
 import imageio
 import numpy as np
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 
 # Find out if we are using OpenCV version 3:
@@ -83,7 +85,7 @@ ENHANCED_CONTRAST_REL_RADIUS = 0.8
 ENHANCED_CONTRAST_MAX_THRESHOLD = 25
 
 
-def find_loop(filename, rotation=None, debug=False, archiveDir=None, IterationClosing=CLOSING_ITERATIONS):
+def find_loop(image, rotation=None, debug=False, archiveDir=None, IterationClosing=CLOSING_ITERATIONS):
     """
       This function detect support (or loop).
       in : filename : string image Filename / Format accepted :
@@ -92,11 +94,22 @@ def find_loop(filename, rotation=None, debug=False, archiveDir=None, IterationCl
                                    If no loop was detected X and y take the value -1.
     """
     # Archive the image if archiveDir is not None
-    if archiveDir is not None:
+    if archiveDir is not None and type(image) == str:
         archiveImage(filename, archiveDir)
 
     # Load the image as a numpy array, taking into account rotation
-    grayImage = loadGrayImage(filename, rotation)
+
+    if type(image) == str:
+        grayImage = loadGrayImage(image, rotation)
+    elif type(image) == np.ndarray:
+        R = image[:, :, 0]
+        G = image[:, :, 1]
+        B = image[:, :, 2]
+        grayImage = R * 299. / 1000 + G * 587. / 1000 + B * 114. / 1000
+    else:
+        print("ERROR : Input image could not be opened, check format or path")
+        return ("ERROR : Input image could not be opened, check format or path",-10,-10)
+
     debugPlot(grayImage, "Initial gray image", debug)
 
     # Calculate min loop area
@@ -220,11 +233,12 @@ def find_loop(filename, rotation=None, debug=False, archiveDir=None, IterationCl
             if rotation is not None:
                 point = (point[0], point[2], cols - point[1])
             if debug:
-                image = imageio.imread(filename, as_gray=True)
+                if type(image) == str:
+                    image = scipy.misc.imread(image, flatten=True)
+                    fileBase = os.path.splitext(os.path.basename(image))[0]
                 imgshape = image.shape
                 extent = (0, imgshape[1], 0, imgshape[0])
                 implot = plt.imshow(image, extent=extent, cmap='gray')
-                fileBase = os.path.splitext(os.path.basename(filename))[0]
                 plt.title(os.path.basename(filename))
                 if point[0] == 'Coord':
                     xPos = point[1]
