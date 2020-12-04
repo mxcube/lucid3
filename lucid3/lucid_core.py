@@ -38,7 +38,7 @@ import os
 import cv2
 import shutil
 import tempfile
-import scipy.misc
+import imageio
 import numpy as np
 import matplotlib as mpl
 mpl.use('Agg')
