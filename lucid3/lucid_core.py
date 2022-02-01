@@ -29,7 +29,7 @@ Lucid 3 project - core module
 __author__ = "Olof Svensson"
 __contact__ = "svensson@esrf.eu"
 __copyright__ = "ESRF, 2017"
-__updated__ = "2018-08-23"
+__updated__ = "2022-02-01"
 
 # This code is a complete re-factoring of the "lucid2" code written by Sogeti,
 # see : https://github.com/mxcube/lucid2
@@ -323,7 +323,7 @@ def loadGrayImage(filename, rotation):
 def enhanceContrast(image):
     enhancedContrastImage = image.copy()
     maxImage = np.max(enhancedContrastImage)
-    print(maxImage)
+    # print(maxImage)
     rows, cols = image.shape
     center = [int(cols / 2), int(rows / 2)]
     # print(center)
