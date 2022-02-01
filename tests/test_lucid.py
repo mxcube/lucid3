@@ -31,6 +31,7 @@ __copyright__ = "ESRF, 2017"
 __updated__ = "2018-08-20"
 
 import matplotlib
+
 # matplotlib.use('Qt4Agg')
 import matplotlib.pyplot as plt
 import os
@@ -45,9 +46,11 @@ import unittest
 import scipy.misc
 from scipy import ndimage
 
+
 class ImagePosition(object):
     xPos = None
     yPos = None
+
 
 def onclick(event):
     if event.xdata != None and event.ydata != None:
@@ -56,14 +59,11 @@ def onclick(event):
         ImagePosition.yPos = event.ydata
 
 
-
 class Test(unittest.TestCase):
-
-
     def test_lucid3(self):
         print("OpenCV Version : %s " % cv2.__version__)
-#        directory = "/scisoft/pxsoft/data/WORKFLOW_TEST_DATA/id30a1/snapshots/snapshots_20160718-152813_Gow8z5"
-#        path = "/scisoft/pxsoft/data/WORKFLOW_TEST_DATA/id30a1/snapshots/*/*_???.png"
+        #        directory = "/scisoft/pxsoft/data/WORKFLOW_TEST_DATA/id30a1/snapshots/snapshots_20160718-152813_Gow8z5"
+        #        path = "/scisoft/pxsoft/data/WORKFLOW_TEST_DATA/id30a1/snapshots/*/*_???.png"
         # path = "/scisoft/pxsoft/data/lucid/reference/id30a1/*.png"
         # path = "/scisoft/pxsoft/data/lucid/reference/id23eh1/*.png"
         # path = "/scisoft/pxsoft/data/lucid/reference/id23eh2/*.png"
@@ -71,8 +71,12 @@ class Test(unittest.TestCase):
         path = "/scisoft/pxsoft/data/lucid/reference/*/*.png"
         # path = "/tmp_14_days/svensson/lucid3/failed/20180829-155630/*.png"
         dateTime = time.strftime("%Y%m%d-%H%M%S", time.localtime(time.time()))
-        failedPath = os.path.join("/tmp_14_days/svensson/", "lucid3", "failed", dateTime)
-        failedPathMarked = os.path.join("/tmp_14_days/svensson/", "lucid3", "failed_marked", dateTime)
+        failedPath = os.path.join(
+            "/tmp_14_days/svensson/", "lucid3", "failed", dateTime
+        )
+        failedPathMarked = os.path.join(
+            "/tmp_14_days/svensson/", "lucid3", "failed_marked", dateTime
+        )
         successPath = os.path.join("/tmp_14_days/svensson/", "lucid3", "success")
         if not os.path.exists(failedPath):
             os.makedirs(failedPath, 0o755)
@@ -85,7 +89,7 @@ class Test(unittest.TestCase):
         index = 0
         for filePath in glob.glob(path):
             index += 1
-            print("*"*80)
+            print("*" * 80)
             print("Image no {0}".format(index))
             print(filePath)
             if "id23eh2" in filePath:
@@ -104,12 +108,14 @@ class Test(unittest.TestCase):
             maxDiff = math.sqrt(imgshape[0] ** 2 + imgshape[1] ** 2) / 15.0
             print(maxDiff)
             extent = (0, imgshape[1], 0, imgshape[0])
-            result = lucid3.find_loop(filePath, rotation=rotation, debug=False)  # , rotation=rotation)
+            result = lucid3.find_loop(
+                filePath, rotation=rotation, debug=False
+            )  # , rotation=rotation)
             print(result)
             resultOk = False
             xPos = None
             yPos = None
-            if result[0] == 'Coord':
+            if result[0] == "Coord":
                 xPos = result[1]
                 yPos = imgshape[0] - result[2]
                 if xPosRef != "None":
@@ -121,18 +127,18 @@ class Test(unittest.TestCase):
                 resultOk = True
             if resultOk:
                 pass
-#                implot = plt.imshow(image, extent=extent)
-#                plt.title(fileName)
-#                if xPosRef != "None":
-#                    plt.plot(float(xPosRef), float(yPosRef), marker='+', markeredgewidth=2,
-#                             markersize=25, color='black')
-#                if xPos is not None:
-#                    plt.plot(xPos, yPos, marker='+', markeredgewidth=2,
-#                             markersize=25, color='red')
-#                newFileName = os.path.join(successPath, fileTitle + "_marked." + suffix)
-#                print "Saving image to " + newFileName
-#                plt.savefig(newFileName)
-#                plt.close()
+            #                implot = plt.imshow(image, extent=extent)
+            #                plt.title(fileName)
+            #                if xPosRef != "None":
+            #                    plt.plot(float(xPosRef), float(yPosRef), marker='+', markeredgewidth=2,
+            #                             markersize=25, color='black')
+            #                if xPos is not None:
+            #                    plt.plot(xPos, yPos, marker='+', markeredgewidth=2,
+            #                             markersize=25, color='red')
+            #                newFileName = os.path.join(successPath, fileTitle + "_marked." + suffix)
+            #                print "Saving image to " + newFileName
+            #                plt.savefig(newFileName)
+            #                plt.close()
             else:
                 # result = lucid3.find_loop(filePath, rotation=rotation, debug=True)
                 shutil.copy(filePath, failedPath)
@@ -142,13 +148,27 @@ class Test(unittest.TestCase):
                 implot = plt.imshow(image, extent=extent)
                 plt.title(fileName)
                 if xPosRef != "None":
-                    plt.plot(float(xPosRef), float(yPosRef), marker='+', markeredgewidth=2,
-                             markersize=20, color='black')
+                    plt.plot(
+                        float(xPosRef),
+                        float(yPosRef),
+                        marker="+",
+                        markeredgewidth=2,
+                        markersize=20,
+                        color="black",
+                    )
                 if xPos is not None:
-                    plt.plot(xPos, yPos, marker='+', markeredgewidth=2,
-                             markersize=20, color='red')
-                cid = implot.figure.canvas.mpl_connect('button_press_event', onclick)
-                newFileName = os.path.join(failedPathMarked, fileTitle + "_marked." + suffix)
+                    plt.plot(
+                        xPos,
+                        yPos,
+                        marker="+",
+                        markeredgewidth=2,
+                        markersize=20,
+                        color="red",
+                    )
+                cid = implot.figure.canvas.mpl_connect("button_press_event", onclick)
+                newFileName = os.path.join(
+                    failedPathMarked, fileTitle + "_marked." + suffix
+                )
                 print("Saving image to " + newFileName)
                 plt.savefig(newFileName)
                 plt.show()
@@ -158,37 +178,62 @@ class Test(unittest.TestCase):
                         implot = plt.imshow(image, extent=extent)
                         plt.title(fileName)
                         if xPosRef != "None":
-                            plt.plot(float(xPosRef), float(yPosRef), marker='+', markeredgewidth=2,
-                                     markersize=20, color='black')
+                            plt.plot(
+                                float(xPosRef),
+                                float(yPosRef),
+                                marker="+",
+                                markeredgewidth=2,
+                                markersize=20,
+                                color="black",
+                            )
                         if xPos is not None:
-                            plt.plot(xPos, yPos, marker='+', markeredgewidth=2,
-                                     markersize=20, color='red')
-                        plt.plot(float(ImagePosition.xPos), float(ImagePosition.yPos), marker='+', markeredgewidth=2,
-                                 markersize=20, color='green')
+                            plt.plot(
+                                xPos,
+                                yPos,
+                                marker="+",
+                                markeredgewidth=2,
+                                markersize=20,
+                                color="red",
+                            )
+                        plt.plot(
+                            float(ImagePosition.xPos),
+                            float(ImagePosition.yPos),
+                            marker="+",
+                            markeredgewidth=2,
+                            markersize=20,
+                            color="green",
+                        )
                         plt.show()
                         plt.close()
                         if rotation is None:
-                            newFileName = "{0}_{1:04d}_{2:04d}.{3}".format(md5sum,
-                                                                           int(round(float(ImagePosition.xPos), 0)),
-                                                                           int(round(float(ImagePosition.yPos), 0)),
-                                                                           suffix)
+                            newFileName = "{0}_{1:04d}_{2:04d}.{3}".format(
+                                md5sum,
+                                int(round(float(ImagePosition.xPos), 0)),
+                                int(round(float(ImagePosition.yPos), 0)),
+                                suffix,
+                            )
                         else:
-                            newFileName = "{0}_{1:04d}_{2:04d}_vertical.{3}".format(md5sum,
-                                                                           int(round(float(ImagePosition.xPos), 0)),
-                                                                           int(round(float(ImagePosition.yPos), 0)),
-                                                                           suffix)
+                            newFileName = "{0}_{1:04d}_{2:04d}_vertical.{3}".format(
+                                md5sum,
+                                int(round(float(ImagePosition.xPos), 0)),
+                                int(round(float(ImagePosition.yPos), 0)),
+                                suffix,
+                            )
                     elif rotation is None:
                         newFileName = "{0}_None_None.{1}".format(md5sum, suffix)
                     else:
-                        newFileName = "{0}_None_None_vertical.{1}".format(md5sum, suffix)
+                        newFileName = "{0}_None_None_vertical.{1}".format(
+                            md5sum, suffix
+                        )
                     print("Old file name: {0}".format(fileName))
                     print("New file name: {0}".format(newFileName))
                     saveChanges = raw_input("Save changes? yes/no: ")
                     if saveChanges.lower() == "yes":
-                        os.rename(filePath, os.path.join(os.path.dirname(filePath), newFileName))
+                        os.rename(
+                            filePath,
+                            os.path.join(os.path.dirname(filePath), newFileName),
+                        )
                         print("Changes saved.")
-
-
 
             # plt.show()
 

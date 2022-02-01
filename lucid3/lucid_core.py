@@ -41,7 +41,8 @@ import tempfile
 import imageio
 import numpy as np
 import matplotlib as mpl
-mpl.use('Agg')
+
+mpl.use("Agg")
 import matplotlib.pyplot as plt
 
 # Find out if we are using OpenCV version 3:
@@ -61,7 +62,6 @@ MIN_REL_LOOP_AREA = 0.02
 
 # Minimal lenght of detected contour (used when contour are still opened)
 MIN_CONTOUR_LENGTH = 125
-
 
 
 AREA_POINT_REL = 0.005
@@ -85,13 +85,19 @@ ENHANCED_CONTRAST_REL_RADIUS = 0.8
 ENHANCED_CONTRAST_MAX_THRESHOLD = 25
 
 
-def find_loop(image, rotation=None, debug=False, archiveDir=None, IterationClosing=CLOSING_ITERATIONS):
+def find_loop(
+    image,
+    rotation=None,
+    debug=False,
+    archiveDir=None,
+    IterationClosing=CLOSING_ITERATIONS,
+):
     """
-      This function detect support (or loop).
-      in : filename : string image Filename / Format accepted :
-      Out : tuple of coordinates : (string status, float x, float y) where string 'status' take value 'Coord'
-                                   or 'No loop detected' depending if loop was detected or not. 
-                                   If no loop was detected X and y take the value -1.
+    This function detect support (or loop).
+    in : filename : string image Filename / Format accepted :
+    Out : tuple of coordinates : (string status, float x, float y) where string 'status' take value 'Coord'
+                                 or 'No loop detected' depending if loop was detected or not.
+                                 If no loop was detected X and y take the value -1.
     """
     # Archive the image if archiveDir is not None
     if archiveDir is not None and type(image) == str:
@@ -105,10 +111,14 @@ def find_loop(image, rotation=None, debug=False, archiveDir=None, IterationClosi
         R = image[:, :, 0]
         G = image[:, :, 1]
         B = image[:, :, 2]
-        grayImage = R * 299. / 1000 + G * 587. / 1000 + B * 114. / 1000
+        grayImage = R * 299.0 / 1000 + G * 587.0 / 1000 + B * 114.0 / 1000
     else:
         print("ERROR : Input image could not be opened, check format or path")
-        return ("ERROR : Input image could not be opened, check format or path",-10,-10)
+        return (
+            "ERROR : Input image could not be opened, check format or path",
+            -10,
+            -10,
+        )
 
     debugPlot(grayImage, "Initial gray image", debug)
 
@@ -123,8 +133,10 @@ def find_loop(image, rotation=None, debug=False, archiveDir=None, IterationClosi
 
     # Step 1 :
     # Removing borders of size SHRINK_OFFSET from image
-    grayImageTruncated = grayImage[SHRINK_OFFSET[0]:rows - 2 * SHRINK_OFFSET[0],
-                                   SHRINK_OFFSET[1]:cols - 2 * SHRINK_OFFSET[1]]
+    grayImageTruncated = grayImage[
+        SHRINK_OFFSET[0] : rows - 2 * SHRINK_OFFSET[0],
+        SHRINK_OFFSET[1] : cols - 2 * SHRINK_OFFSET[1],
+    ]
     debugPlot(grayImageTruncated, "Gray image truncated", debug)
 
     # Step 2 :
@@ -144,29 +156,38 @@ def find_loop(image, rotation=None, debug=False, archiveDir=None, IterationClosi
 
     # Step 5 :
     # Applying again SHRINK_OFFSET to avoid border effect
-    laplacianImageTruncated = laplacianImage[SHRINK_OFFSET[0]:rows - 2 * SHRINK_OFFSET[0],
-                                             SHRINK_OFFSET[1]:cols - 2 * SHRINK_OFFSET[1]]
+    laplacianImageTruncated = laplacianImage[
+        SHRINK_OFFSET[0] : rows - 2 * SHRINK_OFFSET[0],
+        SHRINK_OFFSET[1] : cols - 2 * SHRINK_OFFSET[1],
+    ]
     debugPlot(laplacianImageTruncated, "Laplacian image truncated", debug)
 
     # Step 6 :
     # Apply an asymetrique  smoothing
     # if rotation is None:
-    smoothLaplacianImage = cv2.GaussianBlur(laplacianImageTruncated, ksize=(21, 11), sigmaX=0)
+    smoothLaplacianImage = cv2.GaussianBlur(
+        laplacianImageTruncated, ksize=(21, 11), sigmaX=0
+    )
     debugPlot(smoothLaplacianImage, "Smooth laplacian image truncated", debug)
 
     # Step 7 :
     # Morphology examination
-    MKernel = cv2.getStructuringElement(shape=cv2.MORPH_RECT, ksize=(5, 3), anchor=(3, 1))
-    morphologyExImage = cv2.morphologyEx(smoothLaplacianImage, cv2.MORPH_CLOSE,
-                               MKernel, iterations=IterationClosing)
-    morphologyExImage[ np.where(morphologyExImage < 0) ] = 0
-    morphologyExImage[ np.where(morphologyExImage >= 255) ] = 0
+    MKernel = cv2.getStructuringElement(
+        shape=cv2.MORPH_RECT, ksize=(5, 3), anchor=(3, 1)
+    )
+    morphologyExImage = cv2.morphologyEx(
+        smoothLaplacianImage, cv2.MORPH_CLOSE, MKernel, iterations=IterationClosing
+    )
+    morphologyExImage[np.where(morphologyExImage < 0)] = 0
+    morphologyExImage[np.where(morphologyExImage >= 255)] = 0
     morphologyExImage = np.uint8(morphologyExImage)
     debugPlot(morphologyExImage, "Morphology image", debug)
 
     # Step 8 :
     # Add white border to image
-    whiteBorderImage = addWhiteBorder(morphologyExImage[:], WHITE_BORDER[0], WHITE_BORDER[1])
+    whiteBorderImage = addWhiteBorder(
+        morphologyExImage[:], WHITE_BORDER[0], WHITE_BORDER[1]
+    )
     debugPlot(whiteBorderImage, "White border image", debug)
 
     # Step 9 : Compute and apply threshold
@@ -177,7 +198,9 @@ def find_loop(image, rotation=None, debug=False, archiveDir=None, IterationClosi
     debugPlot(thresholdImage, "Threshold image", debug)
 
     # Step 9a : Right white border
-    rightBorder = addWhiteBorderRight(thresholdImage[:], WHITE_BORDER[0], WHITE_BORDER[1])
+    rightBorder = addWhiteBorderRight(
+        thresholdImage[:], WHITE_BORDER[0], WHITE_BORDER[1]
+    )
     debugPlot(thresholdImage, "Right border image", debug)
 
     # Step 10: Gaussian smoothing
@@ -186,7 +209,9 @@ def find_loop(image, rotation=None, debug=False, archiveDir=None, IterationClosi
 
     # Step 11 : Compute and apply threshold
     # Convert grayscale laplacian image to binarie image using "threshold" as threshold value
-    ret, imageSmoothThreshold2 = cv2.threshold(imageSmoothThreshold, threshold, 255, cv2.THRESH_BINARY_INV)
+    ret, imageSmoothThreshold2 = cv2.threshold(
+        imageSmoothThreshold, threshold, 255, cv2.THRESH_BINARY_INV
+    )
     debugPlot(imageSmoothThreshold2, "Second smooth threshold image", debug)
 
     # Step 12 : Edge detection
@@ -200,9 +225,13 @@ def find_loop(image, rotation=None, debug=False, archiveDir=None, IterationClosi
 
     # Step 14 : Find contours
     if OPENCV3:
-        img, contours, hierarchy = cv2.findContours(imageEdgesDilated, mode=cv2.RETR_TREE, method=cv2.CHAIN_APPROX_SIMPLE)
+        img, contours, hierarchy = cv2.findContours(
+            imageEdgesDilated, mode=cv2.RETR_TREE, method=cv2.CHAIN_APPROX_SIMPLE
+        )
     else:
-        contours, hierarchy = cv2.findContours(imageEdgesDilated, mode=cv2.RETR_TREE, method=cv2.CHAIN_APPROX_SIMPLE)
+        contours, hierarchy = cv2.findContours(
+            imageEdgesDilated, mode=cv2.RETR_TREE, method=cv2.CHAIN_APPROX_SIMPLE
+        )
 
     maxAreaContour = findMaxAreaContour(contours, minLoopArea, debug=debug)
     if debug:
@@ -221,12 +250,16 @@ def find_loop(image, rotation=None, debug=False, archiveDir=None, IterationClosi
         pointShifted = findLoopPoint(indices, maxAreaContour)
 
         #     The coordinate in original image are computed taken into account SHRINK_OFFSET and white bordure
-        point = (pointShifted[0],
-                 pointShifted[1] + 2 * SHRINK_OFFSET[0] - WHITE_BORDER[0],
-                 pointShifted[2] + 2 * SHRINK_OFFSET[1] - WHITE_BORDER[1])
+        point = (
+            pointShifted[0],
+            pointShifted[1] + 2 * SHRINK_OFFSET[0] - WHITE_BORDER[0],
+            pointShifted[2] + 2 * SHRINK_OFFSET[1] - WHITE_BORDER[1],
+        )
 
         # Mask the lower and upper right corners
-        if point[1] < cols * 0.2 and (point[2] < rows * 0.2 or (rows - point[2]) < rows * 0.2):
+        if point[1] < cols * 0.2 and (
+            point[2] < rows * 0.2 or (rows - point[2]) < rows * 0.2
+        ):
             # No loop is detected
             point = ("No loop detected", -1, -1)
         else:
@@ -238,21 +271,27 @@ def find_loop(image, rotation=None, debug=False, archiveDir=None, IterationClosi
                     fileBase = os.path.splitext(os.path.basename(image))[0]
                 imgshape = image.shape
                 extent = (0, imgshape[1], 0, imgshape[0])
-                implot = plt.imshow(image, extent=extent, cmap='gray')
+                implot = plt.imshow(image, extent=extent, cmap="gray")
                 plt.title(os.path.basename(filename))
-                if point[0] == 'Coord':
+                if point[0] == "Coord":
                     xPos = point[1]
                     yPos = imgshape[0] - point[2]
-                    plt.plot(xPos, yPos, marker='+', markeredgewidth=2,
-                             markersize=20, color='red')
+                    plt.plot(
+                        xPos,
+                        yPos,
+                        marker="+",
+                        markeredgewidth=2,
+                        markersize=20,
+                        color="red",
+                    )
                 # newFileName = os.path.join(archiveDir, fileBase + "_marked.png")
                 # print("Saving image to " + newFileName)
                 # plt.savefig(newFileName)
                 plt.show()
                 plt.close()
 
-
     return point
+
 
 def archiveImage(filename, archiveDir):
     (file_descriptor, fileBase) = tempfile.mkstemp(prefix="lucid2_", dir=archiveDir)
@@ -273,12 +312,13 @@ def loadGrayImage(filename, rotation):
     # Read image
     image = cv2.imread(filename)
     # Convert to image
-    grayImage = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY);
+    grayImage = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
     # Take into account rotation
     if rotation is not None:
         # Image assumed to be rotated 90 degrees anti-clockwise
         grayImage = np.rot90(grayImage, k=3)
     return grayImage
+
 
 def enhanceContrast(image):
     enhancedContrastImage = image.copy()
@@ -295,10 +335,11 @@ def enhanceContrast(image):
     mask2 = np.ones((rows, cols), dtype=image.dtype) - mask1
     img_gray_masked = image * mask1 + mask2 * 100
     # debugPlot(img_gray_masked, "Mask 1", True)
-    contrastThreshold = min(ENHANCED_CONTRAST_REL_THRESHOLD * maxImage,
-                            ENHANCED_CONTRAST_MAX_THRESHOLD)
+    contrastThreshold = min(
+        ENHANCED_CONTRAST_REL_THRESHOLD * maxImage, ENHANCED_CONTRAST_MAX_THRESHOLD
+    )
     # print(contrastThreshold)
-    enhancedContrastImage[ np.where(img_gray_masked < contrastThreshold) ] = 0
+    enhancedContrastImage[np.where(img_gray_masked < contrastThreshold)] = 0
     return enhancedContrastImage
 
 
@@ -324,7 +365,6 @@ def findMaxAreaContour(contours, minLoopArea, debug=False):
     return maxContour
 
 
-
 def addWhiteBorder(img, XSize, YSize):
     """
     This fonction add white border to an image
@@ -332,17 +372,18 @@ def addWhiteBorder(img, XSize, YSize):
     In : img : numpy array : input image
     In : XSize : int: width of white border
     In : YSize : int: heigh of white border
-    Out : ouput_mat : numpy array : Output image copy of input one added of white border 
+    Out : ouput_mat : numpy array : Output image copy of input one added of white border
     """
     s0, s1 = img.shape
     dtypeI = img.dtype
     output_mat = np.zeros((s0, s1), dtype=dtypeI)
-    output_mat[XSize:s0 - XSize, YSize:s1] = img[XSize:s0 - XSize, 0:s1 - YSize]
+    output_mat[XSize : s0 - XSize, YSize:s1] = img[XSize : s0 - XSize, 0 : s1 - YSize]
     # Clear corners
     cutoff_size = 50
     output_mat[0:cutoff_size, 0:cutoff_size] = 0
-    output_mat[s0 - cutoff_size:s0, 0:cutoff_size] = 0
+    output_mat[s0 - cutoff_size : s0, 0:cutoff_size] = 0
     return output_mat
+
 
 def addWhiteBorderRight(img, XSize, YSize):
     """
@@ -351,7 +392,7 @@ def addWhiteBorderRight(img, XSize, YSize):
     In : img : numpy array : input image
     In : XSize : int: width of white border
     In : YSize : int: heigh of white border
-    Out : ouput_mat : numpy array : Output image copy of input one added of white border 
+    Out : ouput_mat : numpy array : Output image copy of input one added of white border
     """
     s0, s1 = img.shape
     dtypeI = img.dtype
@@ -360,17 +401,18 @@ def addWhiteBorderRight(img, XSize, YSize):
     # Clear corners
     cutoff_size = 50
     output_mat[0:cutoff_size, 0:cutoff_size] = 0
-    output_mat[s0 - cutoff_size:s0, 0:cutoff_size] = 0
+    output_mat[s0 - cutoff_size : s0, 0:cutoff_size] = 0
     return output_mat
+
 
 def computeThreshold(image):
     """
-    This fonction compute threshold value. In first the image's histogram is calculated. 
-    The threshold value is set to the first indexe of histogram wich respect the 
-    following criterion : DH > 0, DH(i)/H(i) > 0.1 , H(i) < 0.01 % of the Norm. 
+    This fonction compute threshold value. In first the image's histogram is calculated.
+    The threshold value is set to the first indexe of histogram wich respect the
+    following criterion : DH > 0, DH(i)/H(i) > 0.1 , H(i) < 0.01 % of the Norm.
 
     In : image : ipl Image : image to treated
-    Out: threshold : Int : Value of the threshold 
+    Out: threshold : Int : Value of the threshold
     """
     dim = 255
     norm = image.shape[0] * image.shape[1]
@@ -379,15 +421,19 @@ def computeThreshold(image):
     norm = norm - hist[0]
     i = 1
     som = 0
-    while (som < 0.8 * norm and i < len(hist) - 1):
+    while som < 0.8 * norm and i < len(hist) - 1:
         som = som + hist[i]
         i = i + 1
-    while ((((hist[i] - hist[i - 1]) < 0) or (int((hist[i] - hist[i - 1]) / hist[i - 1]) > 0.1) or (hist[i] > 0.01 * norm)) and (i < len(hist) - 1)):
+    while (
+        ((hist[i] - hist[i - 1]) < 0)
+        or (int((hist[i] - hist[i - 1]) / hist[i - 1]) > 0.1)
+        or (hist[i] > 0.01 * norm)
+    ) and (i < len(hist) - 1):
         i = i + 1
         if hist[i - 1] == 0:
             break
 
-    if(i == len(hist) - 1):
+    if i == len(hist) - 1:
         threshold = 0
     else:
         threshold = i
@@ -399,6 +445,7 @@ def computeThreshold(image):
     # print("Seuil: {0}".format(threshold))
 
     return threshold
+
 
 def mapContour(contour, s0):
     """
@@ -419,29 +466,31 @@ def mapContour(contour, s0):
 def findPointMax(listInd):
     """
     This function return the maximal not null value in a list
-    
+
     In : list : List of index
     Out : maximal indexe
     """
     i = len(listInd) - 1
-    while((listInd[i] == [] or listInd[i] == None) and i >= 0):
+    while (listInd[i] == [] or listInd[i] == None) and i >= 0:
         i = i - 1
     if i == 0:
         return None
     else:
         return listInd[i][0]
 
+
 def checkIfX(coordinate, x):
     """
     This function is a filter which return true if the first value of tuple is equal to x
     In : tuple : tuple to be tested
     In : x : float, The test value
-    Out : Bool : Result of test 
+    Out : Bool : Result of test
     """
-    if(coordinate[0][0] == x):
+    if coordinate[0][0] == x:
         return True
     else:
         return False
+
 
 def findLoopPoint(listInd, contour):
     """
@@ -469,44 +518,57 @@ def findLoopPoint(listInd, contour):
         # Initialize the maximal value of abscissa
         xtot = contour[indMax][0][0]
         # Get the criter for extract coordinate point
-        pointDetectionCriteria, contourArea = getPointDetectionCriteria(listInd, contour, indMax)
+        pointDetectionCriteria, contourArea = getPointDetectionCriteria(
+            listInd, contour, indMax
+        )
         areaPointRel = contourArea * AREA_POINT_REL
-        Nmax = s0 / 2.
+        Nmax = s0 / 2.0
         # While coordinates point are not found and iteration max is not reached
-        while(search and noIterations < Nmax):
+        while search and noIterations < Nmax:
             noIterations = noIterations + 1
             # Only one is decrease between upper index and lower index, it's the one with the lower value. Bounding condition are applied on indexes
-            if(contour[indp][0][0] > contour[indm][0][0]):
-                if(indp < s0 - 2):
+            if contour[indp][0][0] > contour[indm][0][0]:
+                if indp < s0 - 2:
                     indp = indp + 1
-                else :
+                else:
                     indp = 0
             else:
-                if(indm > 1):
+                if indm > 1:
                     indm = indm - 1
-                else :
+                else:
                     indm = s0 - 1
             poids = float(abs(contour[indp][0][0] - contour[indm][0][0])) / float(xtot)
             dist = abs(contour[indp][0][1] - contour[indm][0][1])
             distRef = distRef + dist * poids
             # Partial Area of contour is calculated
-            if(indm < indp):
+            if indm < indp:
                 AreaTmp = cv2.contourArea(contour[indm:indp])
-            else :
+            else:
                 AreaTmp = cv2.contourArea(contour) - cv2.contourArea(contour[indp:indm])
             AreaTmp = abs(AreaTmp)
             # if Partial area is lower than area criteron and the criteron mod is not Narrow or support
-            if(AreaTmp < areaPointRel and pointDetectionCriteria != CRIT_MOD_NARROW and pointDetectionCriteria != CRIT_MOD_SUP):
+            if (
+                AreaTmp < areaPointRel
+                and pointDetectionCriteria != CRIT_MOD_NARROW
+                and pointDetectionCriteria != CRIT_MOD_SUP
+            ):
                 # Coordinates are saved
                 xcib = (contour[indm][0][0] + contour[indp][0][0]) * 0.5
                 ycib = (contour[indm][0][1] + contour[indp][0][1]) * 0.5
             # else if criteron mod is narrow or support and distance between current point and maximal abscissa is lower than 80 microns
-            elif((pointDetectionCriteria == CRIT_MOD_NARROW or pointDetectionCriteria == CRIT_MOD_SUP)and (xtot - (contour[indm][0][0] + contour[indp][0][0]) * 0.5) < 40):
+            elif (
+                pointDetectionCriteria == CRIT_MOD_NARROW
+                or pointDetectionCriteria == CRIT_MOD_SUP
+            ) and (xtot - (contour[indm][0][0] + contour[indp][0][0]) * 0.5) < 40:
                 # Coordinates are saved
                 xcib = (contour[indm][0][0] + contour[indp][0][0]) * 0.5
                 ycib = (contour[indm][0][1] + contour[indp][0][1]) * 0.5
             # else if coordinate point already found and criteron mod is not narrow nor support
-            elif(AreaTmp > areaPointRel and pointDetectionCriteria != CRIT_MOD_NARROW and pointDetectionCriteria != CRIT_MOD_SUP):
+            elif (
+                AreaTmp > areaPointRel
+                and pointDetectionCriteria != CRIT_MOD_NARROW
+                and pointDetectionCriteria != CRIT_MOD_SUP
+            ):
                 # the loop is ended in order to avoid minimal contous abscissa interference
                 search = False
             if xcib is not None and ycib is not None:
@@ -517,26 +579,26 @@ def findLoopPoint(listInd, contour):
     else:
         return ("Coord", xcib, ycib)
 
+
 def getPointDetectionCriteria(listInd, contour, indMax):
-    """ 
-    This function use contour to determine the type of support and the type of criteria 
-    to use for get point coord. The determination is based on the shape of counter, 
-    especially the width of counter versus abscissa. 
-    
+    """
+    This function use contour to determine the type of support and the type of criteria
+    to use for get point coord. The determination is based on the shape of counter,
+    especially the width of counter versus abscissa.
+
     There are 4 different types:
-    - Narrow, which is for Narrow support. 
-    - SUP which for support. 
-    - Loop for loop, all loop are not detected in this categorie, only one wich have a principal support. 
+    - Narrow, which is for Narrow support.
+    - SUP which for support.
+    - Loop for loop, all loop are not detected in this categorie, only one wich have a principal support.
     - And default value which is for all not detected support.
-    
-    In[1] List of indice depenting of value of X 
+
+    In[1] List of indice depenting of value of X
     In[2] CvSeq of main contour
     In[3] Indice of the point of CvSeq having the Max X
     Out [1] : Area of interrest wich will be used as reference Area
-      
+
     Area critere and Detected Type are global variable
     """
-
 
     # Definition of value used for criterion
     CRITERON_DY_LOOP_SUP = 140
@@ -569,7 +631,12 @@ def getPointDetectionCriteria(listInd, contour, indMax):
         xMax = xtot
         noIterations = 0
         # Indexes of contours are cover on 600 micron or until abscissa 15 is reach or maximal iteration or a final criteron is foun
-        while (xtot - xMax) < 300 and xm > 15 and noIterations < 500 and pointDetectionCriteria == CRIT_MOD_NOVALUE :
+        while (
+            (xtot - xMax) < 300
+            and xm > 15
+            and noIterations < 500
+            and pointDetectionCriteria == CRIT_MOD_NOVALUE
+        ):
             noIterations = noIterations + 1
             x1 = contour[indp][0][0]  # Upper Abscissa
             y1 = contour[indp][0][1]  # Upper Ordinate
@@ -579,79 +646,90 @@ def getPointDetectionCriteria(listInd, contour, indMax):
             yd = abs(y2 - y1)  # Ordinate difference
             xMax = max(x1, x2)  # Abscissa Maximal
             xMin = min(x1, x2)  # Abscissa Minimal
-            if(yd > yMax) :
+            if yd > yMax:
                 yMax = yd
             # If the minimal Abscissa strongly increase during one iteration, the shape should be lineare
             # Witch is a caracteristic of a kind of support
-            if(abs(xMin - xMinMem) > CRITERON_DX_LINEARITY and pointDetectionCriteria_opt != CRIT_MOD_SUP) :
+            if (
+                abs(xMin - xMinMem) > CRITERON_DX_LINEARITY
+                and pointDetectionCriteria_opt != CRIT_MOD_SUP
+            ):
                 # If the step in Y corresponding is upper than 90 Micron
-                if((yMax - yd) > CRITERON_DY_LINEARITY) :
+                if (yMax - yd) > CRITERON_DY_LINEARITY:
                     pointDetectionCriteria = CRIT_MOD_LOOP
                     AREA_POINT_REL = 0.4
-                else :
+                else:
                     # An option is took to Support type, but not definitly cause some loop can present this kind of shape too
                     pointDetectionCriteria_opt = CRIT_MOD_SUP
             # If yd is upside the narrow limit and dx is downside the x narrow limit then it s not a narrow type
-            if(yd > CRITERON_DY_NARROW and (xtot - xMax) < CRITERON_DX_NARROW):
+            if yd > CRITERON_DY_NARROW and (xtot - xMax) < CRITERON_DX_NARROW:
                 AREA_POINT_REL = 0.05
             # If the CRITERON_DX_NARROW has been cover and area_point_rel is still to the default value and no support option has been detected
-            if((xtot - xMax) > CRITERON_DX_NARROW and AREA_POINT_REL < 0.04 and pointDetectionCriteria_opt != CRIT_MOD_SUP) :
+            if (
+                (xtot - xMax) > CRITERON_DX_NARROW
+                and AREA_POINT_REL < 0.04
+                and pointDetectionCriteria_opt != CRIT_MOD_SUP
+            ):
                 # Then criteron is set to narrow mod
                 pointDetectionCriteria = CRIT_MOD_NARROW
             # If a step in Dy superior to 140 micron is detected then default value for relative area is set to 0.15
-            if(yd > CRITERON_DEFAULT3 and AREA_POINT_REL < 0.1 and pointDetectionCriteria_opt != CRIT_MOD_SUP):
+            if (
+                yd > CRITERON_DEFAULT3
+                and AREA_POINT_REL < 0.1
+                and pointDetectionCriteria_opt != CRIT_MOD_SUP
+            ):
                 AREA_POINT_REL = 0.15
             # If a loop support is detected for the fist time
-            if(yd > CRITERON_DY_LOOP_SUP and pointDetectionCriteria != CRIT_MOD_LOOP):
+            if yd > CRITERON_DY_LOOP_SUP and pointDetectionCriteria != CRIT_MOD_LOOP:
                 Xint = 0
                 iint = 0
                 # Search back the Dy value 50 micron back
-                while(Xint < CRITERON_DX_NARROW and iint < len(deltaY)):
+                while Xint < CRITERON_DX_NARROW and iint < len(deltaY):
                     Xint = listXMax[iint] - xMax
                     iint = iint + 1
                 DY25 = yd - deltaY[iint - 1]
                 # if the step is taller than 140 micron then mod is loop and relative area is set to 0.2
-                if(DY25 > CRITERON_DY_LOOP_SUP2) :
+                if DY25 > CRITERON_DY_LOOP_SUP2:
                     pointDetectionCriteria = CRIT_MOD_LOOP
                     AREA_POINT_REL = 0.2
                 # Else criteron mode is set to support
-                else :
+                else:
                     pointDetectionCriteria = CRIT_MOD_SUP
             # The calculations made on previous indexe ar keep in memory if contour do not present irregularity
             # if abscissa is decreasing
-            if((xMax - xMem) < 0) :
+            if (xMax - xMem) < 0:
                 listXMax.insert(0, xMax)
                 xMem = xMax
                 deltaY.insert(0, yd)
             # else the yd value is test and keep if it's highter than saved one
-            else :
+            else:
                 i = 0
-                if(yd > deltaY[0]):
-                    while(listXMax[0] < xMax):
+                if yd > deltaY[0]:
+                    while listXMax[0] < xMax:
                         i = i + 1
                         listXMax.pop(0)
                         deltaY.pop(0)
             # Only one is decrease between upper index and lower index, it's the one with the lower value. Bounding condition are applied on indexes
-            if(contour[indp][0][0] > contour[indm][0][0]):
-                if(indp < s0 - 2):
+            if contour[indp][0][0] > contour[indm][0][0]:
+                if indp < s0 - 2:
                     indp = indp + 1
-                else :
+                else:
                     indp = 0
             else:
-                if(indm > 1):
+                if indm > 1:
                     indm = indm - 1
-                else :
+                else:
                     indm = s0 - 1
     # Depending on criteron mode the reference area is computed
-    if(pointDetectionCriteria == CRIT_MOD_LOOP) :
-        if(indm < indp):
+    if pointDetectionCriteria == CRIT_MOD_LOOP:
+        if indm < indp:
             contourArea = cv2.contourArea(contour[indm:indp])
-        else :
+        else:
             contourArea = cv2.contourArea(contour) - cv2.contourArea(contour[indp:indm])
-    elif(pointDetectionCriteria_opt == CRIT_MOD_SUP):
+    elif pointDetectionCriteria_opt == CRIT_MOD_SUP:
         pointDetectionCriteria = CRIT_MOD_SUP
         contourArea = cv2.contourArea(contour)
-    else :
+    else:
         contourArea = cv2.contourArea(contour)
 
     return pointDetectionCriteria, contourArea
