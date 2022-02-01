@@ -1,0 +1,4 @@
+setuptools
+imageio
+opencv-python>=2.4
+matplotlib
