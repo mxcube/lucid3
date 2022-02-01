@@ -4,13 +4,10 @@ Created on Oct 15, 2014
 @author: svensson
 """
 
-import matplotlib.image
-import matplotlib.pyplot as plt
-import glob, os
-import scipy.misc
-import pylab
-import numpy
+import os
+import glob
 import tempfile
+import matplotlib.pyplot as plt
 
 
 class ImagePosition(object):
@@ -19,8 +16,8 @@ class ImagePosition(object):
 
 
 def onclick(event):
-    if event.xdata != None and event.ydata != None:
-        print (event.xdata, event.ydata)
+    if event.xdata is not None and event.ydata is not None:
+        print(event.xdata, event.ydata)
         ImagePosition.xPos = event.xdata
         ImagePosition.yPos = event.ydata
 
@@ -28,7 +25,7 @@ def onclick(event):
 snapshotDir = "/scisoft/pxsoft/data/WORKFLOW_TEST_DATA/id30a1/snapshots/snapshots_20160718-152813_Gow8z5"
 savePath = os.path.join("/tmp_14_days/svensson/", "test2")
 if not os.path.exists(savePath):
-    os.makedirs(savePath, 0755)
+    os.makedirs(savePath, 0o755)
 (coordfd, coordfilename) = tempfile.mkstemp(suffix=".txt", prefix="coord", dir=savePath)
 coordfile = open(coordfilename, "w")
 for filePath in glob.glob(os.path.join(snapshotDir, "*.png")):
@@ -37,7 +34,7 @@ for filePath in glob.glob(os.path.join(snapshotDir, "*.png")):
     # Check if marked image exists
     if not filePath.split(".")[0].endswith("marked"):
         markedfilepath = filePath.split(".")[0] + "_marked.png"
-        print markedfilepath
+        print(markedfilepath)
         if os.path.exists(markedfilepath):
             im = plt.imread(markedfilepath)
             imgshape = im.shape
@@ -46,13 +43,13 @@ for filePath in glob.glob(os.path.join(snapshotDir, "*.png")):
             plt.show()
         fileName = os.path.basename(filePath)
         fileBase = fileName.split(".")[0]
-        print fileBase
+        print(fileBase)
         im = plt.imread(filePath)
         imgshape = im.shape
         extent = (0, imgshape[1], 0, imgshape[0])
         implot = plt.imshow(im, extent=extent)
         cid = implot.figure.canvas.mpl_connect("button_press_event", onclick)
-        print "Click on loop or close window if empty loop"
+        print("Click on loop or close window if empty loop")
         plt.title(fileBase)
         #        newFileName = os.path.join(os.path.dirname(filePath), fileBase + "_marked.png")
         #        print "Saving image to " + newFileName
@@ -60,7 +57,7 @@ for filePath in glob.glob(os.path.join(snapshotDir, "*.png")):
         plt.show()
         #    print ImagePosition.xPos, ImagePosition.yPos
         if ImagePosition.xPos is None:
-            print "Empty loop!"
+            print("Empty loop!")
             coordfile.write("%20s %3d %3d\n" % (fileName, -1, -1))
         else:
             while ImagePosition.xPos is not None:
@@ -85,5 +82,7 @@ for filePath in glob.glob(os.path.join(snapshotDir, "*.png")):
                 plt.title(fileBase)
                 # print "Saving image to " + newFileName
                 # plt.savefig(newFileName)
-                print "Click to reposition marker or close window if marker correctly set"
+                print(
+                    "Click to reposition marker or close window if marker correctly set"
+                )
                 plt.show()

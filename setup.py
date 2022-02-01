@@ -3,7 +3,7 @@
 
 from setuptools import setup
 
-requirements = ["scipy", "numpy", "opencv-python>=2.4", "matplotlib"]
+requirements = ["imageio", "numpy", "opencv-python>=2.4", "matplotlib"]
 
 setup(
     name="lucid3",

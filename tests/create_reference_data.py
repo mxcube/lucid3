@@ -34,7 +34,7 @@ import os
 import glob
 import shutil
 import hashlib
-import scipy.misc
+import imageio
 import matplotlib.pyplot as plt
 
 
@@ -44,8 +44,8 @@ class ImagePosition(object):
 
 
 def onclick(event):
-    if event.xdata != None and event.ydata != None:
-        print (event.xdata, event.ydata)
+    if event.xdata is not None and event.ydata is not None:
+        print(event.xdata, event.ydata)
         ImagePosition.xPos = event.xdata
         ImagePosition.yPos = event.ydata
 
@@ -66,7 +66,7 @@ def md5(fname):
 snapshotDir = "/data/id23eh2/inhouse/opid232/snapshots/"
 savePath = "/scisoft/pxsoft/data/lucid/reference/id23eh2"
 if not os.path.exists(savePath):
-    os.makedirs(savePath, 0755)
+    os.makedirs(savePath, 0o755)
 
 # Create a list of already marked images (if exist)
 listMarked = glob.glob(os.path.join(savePath, "*"))
@@ -83,7 +83,7 @@ for filePath in glob.glob(os.path.join(snapshotDir, "*.png")):
     else:
         for markedFileName in listMarked:
             if os.path.basename(markedFileName).startswith(md5sumFirst10):
-                print ("File {0} already marked!".format(filePath))
+                print("File {0} already marked!".format(filePath))
                 marked = True
     #            im = plt.imread(markedfilepath)
     #            imgshape = im.shape
@@ -91,7 +91,7 @@ for filePath in glob.glob(os.path.join(snapshotDir, "*.png")):
     #            implot = plt.imshow(im, extent=extent)
     #            plt.show()
     if not marked:
-        print filePath
+        print(filePath)
         if "id23eh2" in filePath:
             rotationStr = "_vertical"
         else:
@@ -100,20 +100,20 @@ for filePath in glob.glob(os.path.join(snapshotDir, "*.png")):
         yPos = None
         fileName = os.path.basename(filePath)
         fileBase, suffix = fileName.split(".")
-        im = scipy.misc.imread(filePath, flatten=True)
+        im = imageio.imread(filePath, as_gray=True)
         imgshape = im.shape
         extent = (0, imgshape[1], 0, imgshape[0])
         implot = plt.imshow(im, extent=extent)
         cid = implot.figure.canvas.mpl_connect("button_press_event", onclick)
-        print "Click on loop or close window if empty loop"
+        print("Click on loop or close window if empty loop")
         plt.title(fileBase)
         #        newFileName = os.path.join(os.path.dirname(filePath), fileBase + "_marked.png")
         #        print "Saving image to " + newFileName
         #        plt.savefig(newFileName)
         plt.show()
-        print ImagePosition.xPos, ImagePosition.yPos
+        print(ImagePosition.xPos, ImagePosition.yPos)
         if ImagePosition.xPos is None:
-            print "Empty loop!"
+            print("Empty loop!")
         else:
             while ImagePosition.xPos is not None:
                 implot = plt.imshow(im, extent=extent)
@@ -132,7 +132,9 @@ for filePath in glob.glob(os.path.join(snapshotDir, "*.png")):
                 ImagePosition.xPos = None
                 ImagePosition.yPos = None
                 plt.title(fileBase)
-                print "Click to reposition marker or close window if marker correctly set"
+                print(
+                    "Click to reposition marker or close window if marker correctly set"
+                )
                 plt.show()
         if xPos is None:
             newFileName = "{0}_None_None{1}.{2}".format(
@@ -146,5 +148,5 @@ for filePath in glob.glob(os.path.join(snapshotDir, "*.png")):
                 rotationStr,
                 suffix,
             )
-        print (newFileName)
+        print(newFileName)
         shutil.copy(filePath, os.path.join(savePath, newFileName))

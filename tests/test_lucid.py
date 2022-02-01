@@ -30,8 +30,6 @@ __contact__ = "svensson@esrf.eu"
 __copyright__ = "ESRF, 2017"
 __updated__ = "2018-08-20"
 
-import matplotlib
-
 # matplotlib.use('Qt4Agg')
 import matplotlib.pyplot as plt
 import os
@@ -39,12 +37,10 @@ import cv2
 import math
 import time
 import glob
-import numpy
 import lucid3
 import shutil
+import imageio
 import unittest
-import scipy.misc
-from scipy import ndimage
 
 
 class ImagePosition(object):
@@ -53,7 +49,7 @@ class ImagePosition(object):
 
 
 def onclick(event):
-    if event.xdata != None and event.ydata != None:
+    if event.xdata is not None and event.ydata is not None:
         print(event.xdata, event.ydata)
         ImagePosition.xPos = event.xdata
         ImagePosition.yPos = event.ydata
@@ -102,7 +98,7 @@ class Test(unittest.TestCase):
             md5sum, xPosRef, yPosRef = listStr[0:3]
             if len(listStr) == 4 and listStr[3] == "vertical":
                 rotation = -90.0
-            image = scipy.misc.imread(filePath, flatten=True)
+            image = imageio.imread(filePath, as_gray=True)
             imgshape = image.shape
             print(imgshape)
             maxDiff = math.sqrt(imgshape[0] ** 2 + imgshape[1] ** 2) / 15.0

@@ -43,7 +43,7 @@ import numpy as np
 import matplotlib as mpl
 
 mpl.use("Agg")
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt  # noqa E402
 
 # Find out if we are using OpenCV version 3:
 if cv2.__version__.split(".")[0] == "3":
@@ -100,8 +100,8 @@ def find_loop(
                                  If no loop was detected X and y take the value -1.
     """
     # Archive the image if archiveDir is not None
-    if archiveDir is not None and type(image) == str:
-        archiveImage(filename, archiveDir)
+    # if archiveDir is not None and type(image) == str:
+    #     archiveImage(filename, archiveDir)
 
     # Load the image as a numpy array, taking into account rotation
 
@@ -267,12 +267,12 @@ def find_loop(
                 point = (point[0], point[2], cols - point[1])
             if debug:
                 if type(image) == str:
-                    image = scipy.misc.imread(image, flatten=True)
+                    image = imageio.imread(image, as_gray=True)
                     fileBase = os.path.splitext(os.path.basename(image))[0]
                 imgshape = image.shape
                 extent = (0, imgshape[1], 0, imgshape[0])
                 implot = plt.imshow(image, extent=extent, cmap="gray")
-                plt.title(os.path.basename(filename))
+                plt.title(os.path.basename(fileBase))
                 if point[0] == "Coord":
                     xPos = point[1]
                     yPos = imgshape[0] - point[2]
@@ -471,7 +471,7 @@ def findPointMax(listInd):
     Out : maximal indexe
     """
     i = len(listInd) - 1
-    while (listInd[i] == [] or listInd[i] == None) and i >= 0:
+    while (listInd[i] == [] or listInd[i] is None) and i >= 0:
         i = i - 1
     if i == 0:
         return None
@@ -507,7 +507,7 @@ def findLoopPoint(listInd, contour):
     noIterations = 0
     search = True
     # if sequence is not empty
-    if indMax != None:
+    if indMax is not None:
         # Get the lengh of the sequence
         s0 = len(contour)
         # Initialize both cover indexe to the one of the maximal abscissa point of contour
@@ -615,7 +615,7 @@ def getPointDetectionCriteria(listInd, contour, indMax):
     #  Local variable declaration
     pointDetectionCriteria_opt = CRIT_MOD_NOVALUE  # Used when a possible support is detected, but loop could still be detected also.
     # If there is a Maximum in X
-    if indMax != None:
+    if indMax is not None:
         # Get the length of the contour
         s0 = len(contour)
         indp = indMax  # Initialisation of index
