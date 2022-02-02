@@ -261,7 +261,7 @@ def find_loop(
             # No loop is detected
             point = ("No loop detected", -1, -1)
         else:
-            if rotation is not None:
+            if rotation:
                 point = (point[0], point[2], cols - point[1])
             if debug:
                 if type(image) == str:
