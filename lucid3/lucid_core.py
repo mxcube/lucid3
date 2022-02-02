@@ -1,5 +1,3 @@
-#! /usr/bin/env python
-# coding: utf-8
 # /*##########################################################################
 # Copyright (C) 2017 European Synchrotron Radiation Facility
 #
@@ -267,8 +265,10 @@ def find_loop(
                 point = (point[0], point[2], cols - point[1])
             if debug:
                 if type(image) == str:
-                    image = imageio.imread(image, as_gray=True)
                     fileBase = os.path.splitext(os.path.basename(image))[0]
+                    image = imageio.imread(image, as_gray=True)
+                else:
+                    fileBase = "Image"
                 imgshape = image.shape
                 extent = (0, imgshape[1], 0, imgshape[0])
                 implot = plt.imshow(image, extent=extent, cmap="gray")
