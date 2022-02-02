@@ -85,7 +85,7 @@ ENHANCED_CONTRAST_MAX_THRESHOLD = 25
 
 def find_loop(
     image,
-    rotation=None,
+    rotation=False,
     debug=False,
     archiveDir=None,
     IterationClosing=CLOSING_ITERATIONS,
@@ -308,13 +308,13 @@ def debugPlot(image, title, debug=False):
         plt.show()
 
 
-def loadGrayImage(filename, rotation):
+def loadGrayImage(filename, rotation=False):
     # Read image
     image = cv2.imread(filename)
     # Convert to image
     grayImage = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
     # Take into account rotation
-    if rotation is not None:
+    if rotation:
         # Image assumed to be rotated 90 degrees anti-clockwise
         grayImage = np.rot90(grayImage, k=3)
     return grayImage
