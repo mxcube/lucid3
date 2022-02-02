@@ -62,7 +62,6 @@ def getCommandlineOptions():
         help="Display snapshot with result",
         default=False,
     )
-    optional = parser.add_argument_group("optional arguments")
     optional.add_argument(
         "--debug",
         action="store_true",
@@ -88,14 +87,14 @@ if __name__ == "__main__":
         debug=cmd_options.debug,
     )
     print(result)
-    if cmd_options.display and result[0] == "Coord":
+    if cmd_options.display:
         image = imageio.imread(cmd_options.snapshot_file_path, as_gray=True)
         imgshape = image.shape
-        maxDiff = math.sqrt(imgshape[0] ** 2 + imgshape[1] ** 2) / 15.0
         extent = (0, imgshape[1], 0, imgshape[0])
-        xPos = result[1]
-        yPos = imgshape[0] - result[2]
         implot = plt.imshow(image, extent=extent)
         plt.title(cmd_options.snapshot_file_path)
-        plt.plot(xPos, yPos, marker="+", markeredgewidth=2, markersize=25, color="red")
+        if result[0] == "Coord":
+            xPos = result[1]
+            yPos = imgshape[0] - result[2]
+            plt.plot(xPos, yPos, marker="+", markeredgewidth=2, markersize=25, color="red")
         plt.show()
