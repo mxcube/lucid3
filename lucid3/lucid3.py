@@ -24,13 +24,13 @@
 """
 Lucid 3 project - command line script for running lucid3
 """
-
+import os
 import sys
-import math
 import imageio
+import pathlib
 import argparse
 
-import lucid_core
+from lucid3 import lucid_core
 
 import matplotlib
 
@@ -79,7 +79,7 @@ def getCommandlineOptions():
     return results
 
 
-if __name__ == "__main__":
+def main():
     cmd_options = getCommandlineOptions()
     result = lucid_core.find_loop(
         cmd_options.snapshot_file_path,
@@ -98,3 +98,7 @@ if __name__ == "__main__":
             yPos = imgshape[0] - result[2]
             plt.plot(xPos, yPos, marker="+", markeredgewidth=2, markersize=25, color="red")
         plt.show()
+
+
+if __name__ == "__main__":
+    sys.exit(main())

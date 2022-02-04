@@ -20,7 +20,7 @@ requirements:
 
   run:
     - python {{ data['python_requires'] }}
-    - scipy
+    - imageio
     - numpy
     - py-opencv>=2.4
     - matplotlib
