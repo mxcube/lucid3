@@ -9,7 +9,7 @@ crystallography samples holders.
 mxCuBE relies lucid3 to provide automatic centring.
 
 Dependencies:
-- python >= 2.7
+- python >= 3.5
 - opencv >= 2.4
 
 ## Development
