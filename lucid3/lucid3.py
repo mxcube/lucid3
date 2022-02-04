@@ -63,6 +63,18 @@ def getCommandlineOptions():
         default=False,
     )
     optional.add_argument(
+        "--create_result_file",
+        action="store_true",
+        help="Create an image file with result",
+        default=False,
+    )
+    optional.add_argument(
+        "--result_directory",
+        action="store",
+        help="Directory to where store result file (default cwd)",
+        default=os.getcwd(),
+    )
+    optional.add_argument(
         "--debug",
         action="store_true",
         help="Display snapshot with all intermediate steps and with result",
@@ -87,7 +99,7 @@ def main():
         debug=cmd_options.debug,
     )
     print(result)
-    if cmd_options.display:
+    if cmd_options.display or cmd_options.create_result_file:
         image = imageio.imread(cmd_options.snapshot_file_path, as_gray=True)
         imgshape = image.shape
         extent = (0, imgshape[1], 0, imgshape[0])
@@ -96,8 +108,18 @@ def main():
         if result[0] == "Coord":
             xPos = result[1]
             yPos = imgshape[0] - result[2]
-            plt.plot(xPos, yPos, marker="+", markeredgewidth=2, markersize=25, color="red")
-        plt.show()
+            plt.plot(
+                xPos, yPos, marker="+", markeredgewidth=2, markersize=25, color="red"
+            )
+        if cmd_options.display:
+            plt.show()
+        if cmd_options.create_result_file:
+            file_path = pathlib.Path(cmd_options.snapshot_file_path)
+            file_base = file_path.stem
+            new_file_name = file_base + "_lucid3" + file_path.suffix
+            new_file_path = os.path.join(cmd_options.result_directory, new_file_name)
+            plt.savefig(new_file_path)
+            print("Results saved to file {0}".format(new_file_path))
 
 
 if __name__ == "__main__":
