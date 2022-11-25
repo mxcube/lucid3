@@ -40,7 +40,7 @@ import imageio
 import numpy as np
 import matplotlib as mpl
 
-mpl.use("Agg")
+# mpl.use("Agg")
 import matplotlib.pyplot as plt  # noqa E402
 
 # Find out if we are using OpenCV version 3:
