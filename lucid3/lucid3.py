@@ -32,9 +32,6 @@ import argparse
 
 from lucid3 import lucid_core
 
-import matplotlib
-
-# matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt  # noqa E402
 
 
